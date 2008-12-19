@@ -35,6 +35,7 @@ class RuntimeEnvironment(cls: Class[_]) {
   val jarName = buildProperties.getProperty("name", "unknown")
   val jarVersion = buildProperties.getProperty("version", "0.0")
   val jarBuild = buildProperties.getProperty("build_name", "unknown")
+  val jarBuildRevision = buildProperties.getProperty("build_revision", "unknown")
 
 
   /**

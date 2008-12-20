@@ -301,7 +301,7 @@ The extra options you can use in these inner blocks are:
   `setUseParentHandlers`) (default: on)
 
 
-### Usage from within scala
+## Usage from within scala
 
 You can build the scaladocs with the ant rule:
 
@@ -416,7 +416,7 @@ java classes (Logger, Handler, Formatter) is just wrapped by a scala class
 with a cleaner interface.
 
 
-### Contact
+## Contact
 
 Configgy was written by Robey Pointer <robeypointer@gmail.com> and is licensed
 under the ISC license (included). Please write me with questions or comments,

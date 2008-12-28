@@ -21,6 +21,7 @@
       <arg value="${ivy.module} ${ivy.revision}" />
       <arg value="-doctitle" />
       <arg value="${ivy.module} ${ivy.revision}" />
+      <arg value="-format-markdown" />
       <arg value="-linksource" />
       <arg line="${doc.sources}" />
     </java>

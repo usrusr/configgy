@@ -42,13 +42,18 @@ object AttributesSpec extends Specification {
       s("name") = "Communist"
       s("age") = 8
       s("sleepy") = true
+      s("money") = 1900500400300L
       s.getString("name", "") mustEqual "Communist"
       s.getInt("age", 999) mustEqual 8
       s.getInt("unknown", 500) mustEqual 500
+      s.getLong("money", 0) mustEqual 1900500400300L
       s("name") mustEqual "Communist"
       s("age", null) mustEqual "8"
       s("age", "500") mustEqual "8"
+      s("age", 500) mustEqual 8
       s("unknown", "500") mustEqual "500"
+      s("money", 0L) mustEqual 1900500400300L
+      s("money").toLong mustEqual 1900500400300L
       s("age").toInt mustEqual 8
       s("sleepy").toBoolean mustEqual true
     }

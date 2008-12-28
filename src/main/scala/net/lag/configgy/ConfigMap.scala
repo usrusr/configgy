@@ -94,7 +94,7 @@ trait ConfigMap {
   /**
    * Return a new (immutable) map containing a deep copy of all the keys
    * and values from this AttributeMap. Keys from nested maps will be
-   * compound (like <code>"inner.name"</code>).
+   * compound (like `"inner.name"`).
    */
   def asMap(): Map[String, String]
 
@@ -124,14 +124,13 @@ trait ConfigMap {
 
   /**
    * If the requested key is present and can be converted into an int
-   * (via <code>Integer.parseInt</code>), return that int. Otherwise,
-   * return <code>None</code>.
+   * (via `String.toInt`), return that int. Otherwise, return `None`.
    */
   def getInt(key: String): Option[Int] = {
     getString(key) match {
       case Some(x) => {
         try {
-          Some(Integer.parseInt(x))
+          Some(x.toInt)
         } catch {
           case _ => None
         }
@@ -142,7 +141,7 @@ trait ConfigMap {
 
   /**
    * If the requested key is present and can be converted into an int
-   * (via <code>Integer.parseInt</code>), return that int. Otherwise,
+   * (via `String.toInt`), return that int. Otherwise,
    * return the given default value.
    */
   def getInt(key: String, defaultValue: Int): Int = {
@@ -153,9 +152,38 @@ trait ConfigMap {
   }
 
   /**
+   * If the requested key is present and can be converted into a long
+   * (via `String.toLong`), return that long. Otherwise, return `None`.
+   */
+  def getLong(key: String): Option[Long] = {
+    getString(key) match {
+      case Some(x) => {
+        try {
+          Some(x.toLong)
+        } catch {
+          case _ => None
+        }
+      }
+      case None => None
+    }
+  }
+
+  /**
+   * If the requested key is present and can be converted into a long
+   * (via `String.toLong`), return that long. Otherwise,
+   * return the given default value.
+   */
+  def getLong(key: String, defaultValue: Long): Long = {
+    getLong(key) match {
+      case Some(n) => n
+      case None => defaultValue
+    }
+  }
+
+  /**
    * If the requested key is present and can be converted into a bool
-   * (by being either <code>"true"</code> or <code>"false"</code>),
-   * return that bool. Otherwise, return <code>None</code>.
+   * (by being either `"true"` or `"false"`),
+   * return that bool. Otherwise, return `None`.
    */
   def getBool(key: String): Option[Boolean] = {
     getString(key) match {
@@ -166,7 +194,7 @@ trait ConfigMap {
 
   /**
    * If the requested key is present and can be converted into a bool
-   * (by being either <code>"true"</code> or <code>"false"</code>),
+   * (by being either `"true"` or `"false"`),
    * return that bool. Otherwise, return the given default value.
    */
   def getBool(key: String, defaultValue: Boolean): Boolean = {
@@ -181,6 +209,12 @@ trait ConfigMap {
    * first.
    */
   def setInt(key: String, value: Int): Unit = setString(key, value.toString)
+
+  /**
+   * Set the given key to a long value, by converting it to a string
+   * first.
+   */
+  def setLong(key: String, value: Long): Unit = setString(key, value.toString)
 
   /**
    * Set the given key to a bool value, by converting it to a string
@@ -217,7 +251,7 @@ trait ConfigMap {
 
   /**
    * If the requested key is present, return its value as a string. Otherwise, throw a
-   * ConfigException. <code>toInt</code> and <code>toBoolean</code> may be called on the
+   * ConfigException. `toInt` and `toBoolean` may be called on the
    * returned string if an int or bool is desired.
    */
   def apply(key: String): String = getString(key) match {
@@ -225,24 +259,30 @@ trait ConfigMap {
     case Some(v) => v
   }
 
-  /** Equivalent to <code>getString(key, defaultValue)</code>. */
+  /** Equivalent to `getString(key, defaultValue)`. */
   def apply(key: String, defaultValue: String) = getString(key, defaultValue)
 
-  /** Equivalent to <code>getInt(key, defaultValue)</code>. */
+  /** Equivalent to `getInt(key, defaultValue)`. */
   def apply(key: String, defaultValue: Int) = getInt(key, defaultValue)
 
-  /** Equivalent to <code>getBool(key, defaultValue)</code>. */
+  /** Equivalent to `getLong(key, defaultValue)`. */
+  def apply(key: String, defaultValue: Long) = getLong(key, defaultValue)
+
+  /** Equivalent to `getBool(key, defaultValue)`. */
   def apply(key: String, defaultValue: Boolean) = getBool(key, defaultValue)
 
-  /** Equivalent to <code>setString(key, value)</code>. */
+  /** Equivalent to `setString(key, value)`. */
   def update(key: String, value: String) = setString(key, value)
 
-  /** Equivalent to <code>setInt(key, value)<code>. */
+  /** Equivalent to `setInt(key, value)`. */
   def update(key: String, value: Int) = setInt(key, value)
 
-  /** Equivalent to <code>setBool(key, value)<code>. */
+  /** Equivalent to `setLong(key, value)`. */
+  def update(key: String, value: Long) = setLong(key, value)
+
+  /** Equivalent to `setBool(key, value)`. */
   def update(key: String, value: Boolean) = setBool(key, value)
 
-  /** Equivalent to <code>setList(key, value)<code>. */
+  /** Equivalent to `setList(key, value)`. */
   def update(key: String, value: Seq[String]) = setList(key, value)
 }

@@ -157,5 +157,13 @@ object AttributesSpec extends Specification {
       s.toString mustEqual "{: age=\"8\" diet={diet: food=\"fish\" liquid=\"water\" } name=\"Communist\" }"
       t.toString mustEqual "{: age=\"8\" diet={diet: food=\"Meow Mix\" liquid=\"water\" } name=\"Communist\" }"
     }
+
+    "find lists" in {
+      val s = new Attributes(null, "")
+      s("port") = 6667
+      s("hosts") = List("localhost", "skunk.example.com")
+      s.getList("hosts").toList mustEqual List("localhost", "skunk.example.com")
+      s.getList("non-hosts").toList mustEqual Nil
+    }
   }
 }

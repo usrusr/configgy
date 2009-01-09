@@ -52,8 +52,8 @@ trait ConfigMap {
   /**
    * Lookup an entry in this map, and if it exists and can be represented
    * as a string list, return it. String lists will be returned as-is, and
-   * strings will be returned as an array of length 1. Nested ConfigMaps
-   * will return None as if there was no entry present.
+   * strings will be returned as an array of length 1. If the entry doesn't
+   * exist or is a nested ConfigMap, an empty sequence is returned.
    */
   def getList(key: String): Seq[String]
 

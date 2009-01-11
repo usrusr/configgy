@@ -38,15 +38,15 @@ private[logging] object Syslog {
    * Convert the java/scala log level into its closest syslog-ng severity.
    */
   private[logging] def severityForLogLevel(level: Int): Int = {
-    if (level >= FATAL.value) {
+    if (level >= Level.FATAL.value) {
       SEVERITY_ALERT
-    } else if (level >= CRITICAL.value) {
+    } else if (level >= Level.CRITICAL.value) {
       SEVERITY_CRITICAL
-    } else if (level >= ERROR.value) {
+    } else if (level >= Level.ERROR.value) {
       SEVERITY_ERROR
-    } else if (level >= WARNING.value) {
+    } else if (level >= Level.WARNING.value) {
       SEVERITY_WARNING
-    } else if (level >= INFO.value) {
+    } else if (level >= Level.INFO.value) {
       SEVERITY_INFO
     } else {
       SEVERITY_DEBUG

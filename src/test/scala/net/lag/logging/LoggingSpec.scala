@@ -94,12 +94,12 @@ object LoggingSpec extends Specification with TestHelper {
     }
 
     "provide level name and value maps" in {
-      Logger.levels mustEqual Map(TRACE.value -> TRACE, DEBUG.value -> DEBUG,
-        INFO.value -> INFO, WARNING.value -> WARNING, ERROR.value -> ERROR,
-        CRITICAL.value -> CRITICAL, FATAL.value -> FATAL)
-      Logger.levelNames mustEqual Map("TRACE" -> TRACE, "DEBUG" -> DEBUG,
-        "INFO" -> INFO, "WARNING" -> WARNING, "ERROR" -> ERROR,
-        "CRITICAL" -> CRITICAL, "FATAL" -> FATAL)
+      Logger.levels mustEqual Map(Level.TRACE.value -> Level.TRACE, Level.DEBUG.value -> Level.DEBUG,
+        Level.INFO.value -> Level.INFO, Level.WARNING.value -> Level.WARNING, Level.ERROR.value -> Level.ERROR,
+        Level.CRITICAL.value -> Level.CRITICAL, Level.FATAL.value -> Level.FATAL)
+      Logger.levelNames mustEqual Map("TRACE" -> Level.TRACE, "DEBUG" -> Level.DEBUG,
+        "INFO" -> Level.INFO, "WARNING" -> Level.WARNING, "ERROR" -> Level.ERROR,
+        "CRITICAL" -> Level.CRITICAL, "FATAL" -> Level.FATAL)
     }
 
     "perform basic logging" in {
@@ -159,7 +159,7 @@ object LoggingSpec extends Specification with TestHelper {
 
     "log level names" in {
       val log1 = Logger.get("net.lag.logging.Skeletor")
-      log1.setLevel(DEBUG)
+      log1.setLevel(Level.DEBUG)
       log1.warning("I am coming for you!")
       log1.debug("Loading supplies...")
       log1.trace("Catfood query.")
@@ -293,7 +293,7 @@ object LoggingSpec extends Specification with TestHelper {
       var syslog = new TimeWarpingSyslogHandler(true, "localhost:" + serverPort)
       val log = Logger.get("net.lag.whiskey.Train")
       log.addHandler(syslog)
-      log.setLevel(DEBUG)
+      log.setLevel(Level.DEBUG)
 
       log.fatal("fatal message!")
       log.error("error message!")
@@ -335,7 +335,7 @@ object LoggingSpec extends Specification with TestHelper {
         c.load(TEST_DATA)
         val log = Logger.configure(c, false, false)
 
-        log.getLevel mustEqual DEBUG
+        log.getLevel mustEqual Level.DEBUG
         log.getHandlers.length mustEqual 1
         val h = log.getHandlers()(0).asInstanceOf[Handler]
         h.asInstanceOf[FileHandler].filename mustEqual folderName + "/test.log"

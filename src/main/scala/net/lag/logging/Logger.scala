@@ -18,15 +18,18 @@ sealed case class Level(name: String, value: Int) extends javalog.Level(name, va
   Logger.levelNamesMap(name) = this
   Logger.levelsMap(value) = this
 }
-case object OFF extends Level("OFF", Math.MAX_INT)
-case object FATAL extends Level("FATAL", 1000)
-case object CRITICAL extends Level("CRITICAL", 970)
-case object ERROR extends Level("ERROR", 930)
-case object WARNING extends Level("WARNING", 900)
-case object INFO extends Level("INFO", 800)
-case object DEBUG extends Level("DEBUG", 500)
-case object TRACE extends Level("TRACE", 400)
-case object ALL extends Level("ALL", Math.MIN_INT)
+
+object Level {
+  case object OFF extends Level("OFF", Math.MAX_INT)
+  case object FATAL extends Level("FATAL", 1000)
+  case object CRITICAL extends Level("CRITICAL", 970)
+  case object ERROR extends Level("ERROR", 930)
+  case object WARNING extends Level("WARNING", 900)
+  case object INFO extends Level("INFO", 800)
+  case object DEBUG extends Level("DEBUG", 500)
+  case object TRACE extends Level("TRACE", 400)
+  case object ALL extends Level("ALL", Math.MIN_INT)
+}
 
 
 class LoggingException(reason: String) extends Exception(reason)
@@ -96,20 +99,20 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
   }
 
   // convenience methods:
-  def fatal(msg: String, items: Any*) = log(FATAL, msg, items: _*)
-  def fatal(thrown: Throwable, msg: String, items: Any*) = log(FATAL, thrown, msg, items: _*)
-  def critical(msg: String, items: Any*) = log(CRITICAL, msg, items: _*)
-  def critical(thrown: Throwable, msg: String, items: Any*) = log(CRITICAL, thrown, msg, items: _*)
-  def error(msg: String, items: Any*) = log(ERROR, msg, items: _*)
-  def error(thrown: Throwable, msg: String, items: Any*) = log(ERROR, thrown, msg, items: _*)
-  def warning(msg: String, items: Any*) = log(WARNING, msg, items: _*)
-  def warning(thrown: Throwable, msg: String, items: Any*) = log(WARNING, thrown, msg, items: _*)
-  def info(msg: String, items: Any*) = log(INFO, msg, items: _*)
-  def info(thrown: Throwable, msg: String, items: Any*) = log(INFO, thrown, msg, items: _*)
-  def debug(msg: String, items: Any*) = log(DEBUG, msg, items: _*)
-  def debug(thrown: Throwable, msg: String, items: Any*) = log(DEBUG, thrown, msg, items: _*)
-  def trace(msg: String, items: Any*) = log(TRACE, msg, items: _*)
-  def trace(thrown: Throwable, msg: String, items: Any*) = log(TRACE, thrown, msg, items: _*)
+  def fatal(msg: String, items: Any*) = log(Level.FATAL, msg, items: _*)
+  def fatal(thrown: Throwable, msg: String, items: Any*) = log(Level.FATAL, thrown, msg, items: _*)
+  def critical(msg: String, items: Any*) = log(Level.CRITICAL, msg, items: _*)
+  def critical(thrown: Throwable, msg: String, items: Any*) = log(Level.CRITICAL, thrown, msg, items: _*)
+  def error(msg: String, items: Any*) = log(Level.ERROR, msg, items: _*)
+  def error(thrown: Throwable, msg: String, items: Any*) = log(Level.ERROR, thrown, msg, items: _*)
+  def warning(msg: String, items: Any*) = log(Level.WARNING, msg, items: _*)
+  def warning(thrown: Throwable, msg: String, items: Any*) = log(Level.WARNING, thrown, msg, items: _*)
+  def info(msg: String, items: Any*) = log(Level.INFO, msg, items: _*)
+  def info(thrown: Throwable, msg: String, items: Any*) = log(Level.INFO, thrown, msg, items: _*)
+  def debug(msg: String, items: Any*) = log(Level.DEBUG, msg, items: _*)
+  def debug(thrown: Throwable, msg: String, items: Any*) = log(Level.DEBUG, thrown, msg, items: _*)
+  def trace(msg: String, items: Any*) = log(Level.TRACE, msg, items: _*)
+  def trace(thrown: Throwable, msg: String, items: Any*) = log(Level.TRACE, thrown, msg, items: _*)
 
   /**
    * Log a message, with lazy (call-by-name) computation of the message,
@@ -134,20 +137,20 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
   }
 
   // convenience methods:
-  def ifFatal(message: => AnyRef) = logLazy(FATAL, message)
-  def ifFatal(thrown: Throwable, message: => AnyRef) = logLazy(FATAL, thrown, message)
-  def ifCritical(message: => AnyRef) = logLazy(CRITICAL, message)
-  def ifCritical(thrown: Throwable, message: => AnyRef) = logLazy(CRITICAL, thrown, message)
-  def ifError(message: => AnyRef) = logLazy(ERROR, message)
-  def ifError(thrown: Throwable, message: => AnyRef) = logLazy(ERROR, thrown, message)
-  def ifWarning(message: => AnyRef) = logLazy(WARNING, message)
-  def ifWarning(thrown: Throwable, message: => AnyRef) = logLazy(WARNING, thrown, message)
-  def ifInfo(message: => AnyRef) = logLazy(INFO, message)
-  def ifInfo(thrown: Throwable, message: => AnyRef) = logLazy(INFO, thrown, message)
-  def ifDebug(message: => AnyRef) = logLazy(DEBUG, message)
-  def ifDebug(thrown: Throwable, message: => AnyRef) = logLazy(DEBUG, thrown, message)
-  def ifTrace(message: => AnyRef) = logLazy(TRACE, message)
-  def ifTrace(thrown: Throwable, message: => AnyRef) = logLazy(TRACE, thrown, message)
+  def ifFatal(message: => AnyRef) = logLazy(Level.FATAL, message)
+  def ifFatal(thrown: Throwable, message: => AnyRef) = logLazy(Level.FATAL, thrown, message)
+  def ifCritical(message: => AnyRef) = logLazy(Level.CRITICAL, message)
+  def ifCritical(thrown: Throwable, message: => AnyRef) = logLazy(Level.CRITICAL, thrown, message)
+  def ifError(message: => AnyRef) = logLazy(Level.ERROR, message)
+  def ifError(thrown: Throwable, message: => AnyRef) = logLazy(Level.ERROR, thrown, message)
+  def ifWarning(message: => AnyRef) = logLazy(Level.WARNING, message)
+  def ifWarning(thrown: Throwable, message: => AnyRef) = logLazy(Level.WARNING, thrown, message)
+  def ifInfo(message: => AnyRef) = logLazy(Level.INFO, message)
+  def ifInfo(thrown: Throwable, message: => AnyRef) = logLazy(Level.INFO, thrown, message)
+  def ifDebug(message: => AnyRef) = logLazy(Level.DEBUG, message)
+  def ifDebug(thrown: Throwable, message: => AnyRef) = logLazy(Level.DEBUG, thrown, message)
+  def ifTrace(message: => AnyRef) = logLazy(Level.TRACE, message)
+  def ifTrace(thrown: Throwable, message: => AnyRef) = logLazy(Level.TRACE, thrown, message)
 }
 
 
@@ -167,37 +170,37 @@ object Logger {
   // ----- convenience methods:
 
   /** OFF is used to turn off logging entirely. */
-  def OFF = logging.OFF
+  def OFF = Level.OFF
 
   /** Describes an event which will cause the application to exit immediately, in failure. */
-  def FATAL = logging.FATAL
+  def FATAL = Level.FATAL
 
   /** Describes an event which will cause the application to fail to work correctly, but
    *  keep attempt to continue. The application may be unusable.
    */
-  def CRITICAL = logging.CRITICAL
+  def CRITICAL = Level.CRITICAL
 
   /** Describes a user-visible error that may be transient or not affect other users. */
-  def ERROR = logging.ERROR
+  def ERROR = Level.ERROR
 
   /** Describes a problem which is probably not user-visible but is notable and/or may be
    *  an early indication of a future error.
    */
-  def WARNING = logging.WARNING
+  def WARNING = Level.WARNING
 
   /** Describes information about the normal, functioning state of the application. */
-  def INFO = logging.INFO
+  def INFO = Level.INFO
 
   /** Describes information useful for general debugging, but probably not normal,
    *  day-to-day use.
    */
-  def DEBUG = logging.DEBUG
+  def DEBUG = Level.DEBUG
 
   /** Describes information useful for intense debugging. */
-  def TRACE = logging.TRACE
+  def TRACE = Level.TRACE
 
   /** ALL is used to log everything. */
-  def ALL = logging.ALL
+  def ALL = Level.ALL
 
   // to force them to get loaded from class files:
   root.setLevel(FATAL)

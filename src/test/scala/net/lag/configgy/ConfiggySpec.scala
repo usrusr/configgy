@@ -185,5 +185,22 @@ object ConfiggySpec extends Specification with TestHelper {
         Configgy.config.getInt("robot.age", 0) mustEqual 23003
       }
     }
+
+    "change a nested value without invalidating ConfigMap references" in {
+      withTempFolder {
+        val data1 =
+          "<robot>\n" +
+          "    name=\"Nibbler\"\n" +
+          "    age = 23002\n" +
+          "</robot>\n"
+        writeConfigFile("test.conf", data1)
+        Configgy.configure(folderName, "test.conf")
+
+        val robot = Configgy.config.getConfigMap("robot").get
+        robot.getString("name") mustEqual Some("Nibbler")
+        robot.setString("name", "Bender")
+        robot.getString("name") mustEqual Some("Bender")
+      }
+    }
   }
 }

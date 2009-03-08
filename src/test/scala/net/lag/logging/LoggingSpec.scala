@@ -373,7 +373,7 @@ object LoggingSpec extends Specification with TestHelper {
 
       val c = new Config
       c.load(TEST_DATA)
-      Logger.configure(c, false, false) must throwA(new LoggingException(""))
+      Logger.configure(c, false, false) must throwA(new LoggingException("Unknown logging config attribute(s): style"))
     }
   }
 }

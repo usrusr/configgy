@@ -114,11 +114,11 @@ object ConfigParserSpec extends Specification {
         "<cat>\n" +
         "    dog = 1\n" +
         "</cat>\n"
-      parse(data) must throwA(new ConfigException(""))
+      parse(data) must throwA(new ConfigException("Illegal key cat"))
     }
 
     "catch unknown block modifiers" in {
-      parse("<upp name=\"fred\">\n</upp>\n") must throwA(new ParseException(""))
+      parse("<upp name=\"fred\">\n</upp>\n") must throwA(new ParseException("Unknown block modifier"))
     }
   }
 

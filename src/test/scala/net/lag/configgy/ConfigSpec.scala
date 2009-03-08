@@ -90,7 +90,7 @@ object ConfigSpec extends Specification with TestHelper {
       c("alpha.beta.gamma") = "hello"
 
       c.subscribe("alpha.beta", new AngrySubscriber)
-      (c("alpha.beta.gamma") = "gutentag") must throwA(new ValidationException(""))
+      (c("alpha.beta.gamma") = "gutentag") must throwA(new ValidationException("no way!"))
       c("alpha.giraffe") = "tall!"
       c.toString mustEqual "{: alpha={alpha: beta={alpha.beta: gamma=\"hello\" } giraffe=\"tall!\" } }"
     }
@@ -123,7 +123,7 @@ object ConfigSpec extends Specification with TestHelper {
       c.getConfigMap("forest").get.toString mustEqual
         "{forest: fires={forest.fires: are=\"bad\" } matches=\"false\" }"
 
-      c.remove("forest") must throwA(new ValidationException(""))
+      c.remove("forest") must throwA(new ValidationException("no way!"))
 
       rootsub.used = false
       betasub.used = false

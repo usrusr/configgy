@@ -192,14 +192,30 @@ object ConfiggySpec extends Specification with TestHelper {
           "<robot>\n" +
           "    name=\"Nibbler\"\n" +
           "    age = 23002\n" +
+          "    nested {\n" +
+          "        thing = 5\n"
+          "    }\n" +
           "</robot>\n"
         writeConfigFile("test.conf", data1)
         Configgy.configure(folderName, "test.conf")
 
-        val robot = Configgy.config.getConfigMap("robot").get
+        val robot = Configgy.config.configMap("robot")
         robot.getString("name") mustEqual Some("Nibbler")
         robot.setString("name", "Bender")
         robot.getString("name") mustEqual Some("Bender")
+        val nested = Configgy.config.configMap("robot.nested")
+        nested("thing") mustEqual "5"
+        robot("age") mustEqual "23002"
+
+        val data2 =
+          "<robot>\n" +
+          "    name=\"Nibbler\"\n" +
+          "    age = 23004\n" +
+          "</robot>\n"
+        writeConfigFile("test.conf", data2)
+        Configgy.reload
+        nested.toString mustEqual "{robot.nested: }"
+        robot("age") mustEqual "23004"
       }
     }
   }

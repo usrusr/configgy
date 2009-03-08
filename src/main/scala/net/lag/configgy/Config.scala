@@ -124,7 +124,7 @@ class Config extends ConfigMap {
       subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
       subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
 
-      root = newRoot
+      root.replaceWith(newRoot)
     } else {
       new ConfigParser(root, importer).parse(data)
     }
@@ -243,7 +243,8 @@ class Config extends ConfigMap {
   def contains(key: String): Boolean = root.contains(key)
   def remove(key: String): Boolean = root.remove(key)
   def keys: Iterator[String] = root.keys
-  def asMap(): Map[String, String] = root.asMap
+  def asMap(): Map[String, String] = root.asMap()
+  def copy(): ConfigMap = root.copy()
 }
 
 

@@ -38,8 +38,9 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   def contains(key: String): Boolean = env.contains(key)
   def remove(key: String): Boolean = error("read-only attributes")
   def keys: Iterator[String] = env.keys
-  def asMap: Map[String, String] = error("not implemented")
+  def asMap(): Map[String, String] = error("not implemented")
   def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
+  def copy(): ConfigMap = this
 
 
   try {

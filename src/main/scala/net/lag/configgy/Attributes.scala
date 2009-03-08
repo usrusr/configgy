@@ -323,7 +323,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   // make a deep copy of the Attributes tree.
-  def copy: Attributes = {
+  def copy(): Attributes = {
     val out = new Attributes(config, name)
     for (val (key, value) <- cells.elements) {
       value match {
@@ -331,7 +331,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
         case StringListCell(x) => out(key) = x
         case AttributesCell(x) =>
           val attr = x.copy
-          out.cells += Pair(key, new AttributesCell(attr))
+          out.cells += (key -> new AttributesCell(attr))
       }
     }
     out

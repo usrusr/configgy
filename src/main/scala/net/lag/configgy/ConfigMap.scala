@@ -108,6 +108,11 @@ trait ConfigMap {
    */
   def subscribe(subscriber: Subscriber): SubscriptionKey
 
+  /**
+   * Make a deep copy of this ConfigMap.
+   */
+  def copy(): ConfigMap
+
 
   // -----  convenience methods
 
@@ -235,8 +240,8 @@ trait ConfigMap {
   }
 
   /**
-   * Subscribe to changes on this AttributeMap, but don't bother with
-   * validating. Whenever this AttributeMap changes, a new copy will be
+   * Subscribe to changes on this ConfigMap, but don't bother with
+   * validating. Whenever this ConfigMap changes, a new copy will be
    * passed to the given function.
    */
   def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {

@@ -215,8 +215,7 @@ class Config extends ConfigMap {
     subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
     subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
 
-    newRoot.setMonitored
-    root = newRoot
+    root.replaceWith(newRoot)
     true
   }
 

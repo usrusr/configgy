@@ -18,8 +18,7 @@ object Configgy {
 
   /**
    * The base Config object for this server. This will only be defined
-   * after calling one of <code>configure</code> or
-   * <code>configureFromResource</code>.
+   * after calling one of `configure` or `configureFromResource`.
    */
   def config = _config
 
@@ -57,7 +56,7 @@ object Configgy {
 
   /**
    * Reload the previously-loaded config file from disk. Any changes will
-   * take effect immediately. <b>All</b> subscribers will be called to
+   * take effect immediately. **All** subscribers will be called to
    * verify and commit the change (even if their nodes didn't actually
    * change).
    */

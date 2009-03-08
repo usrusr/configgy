@@ -96,13 +96,13 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
    * return the nested Attributes block and simple key that can be used to
    * make a recursive call. If the key is simple, return None.
    *
-   * <p> If the key is compound, but nested Attributes objects don't exist
+   * If the key is compound, but nested Attributes objects don't exist
    * that match the key, an attempt will be made to create the nested
    * Attributes objects. If one of the key segments already refers to an
    * attribute that isn't a nested Attribute object, a ConfigException
    * will be thrown.
    *
-   * <p> For example, for the key "a.b.c", the Attributes object for "a.b"
+   * For example, for the key "a.b.c", the Attributes object for "a.b"
    * and the key "c" will be returned, creating the "a.b" Attributes object
    * if necessary. If "a" or "a.b" exists but isn't a nested Attributes
    * object, then an ConfigException will be thrown.
@@ -122,6 +122,26 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       }
     } else {
       None
+    }
+  }
+
+  def replaceWith(newAttributes: Attributes): Unit = {
+    // stash away subnodes and reinsert them.
+    val subnodes = cells.filter { item =>
+      item._2.isInstanceOf[AttributesCell]
+    }.map { item =>
+      (item._1, item._2.asInstanceOf[AttributesCell])
+    }.toList
+    cells.clear
+    cells ++= newAttributes.cells
+    for ((key, cell) <- subnodes) {
+      newAttributes.cells.get(key) match {
+        case Some(AttributesCell(newattr)) =>
+          cell.attr.replaceWith(newattr)
+          cells(key) = cell
+        case None =>
+          cell.attr.replaceWith(new Attributes(config, ""))
+      }
     }
   }
 

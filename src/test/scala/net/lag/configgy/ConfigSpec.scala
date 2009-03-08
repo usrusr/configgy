@@ -27,7 +27,10 @@ object ConfigSpec extends Specification with TestHelper {
     def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
     def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
       used = true
-      savedCurrent = current
+      savedCurrent = current match {
+        case None => None
+        case Some(x) => Some(x.asInstanceOf[Attributes].copy)
+      }
       savedReplacement = replacement
     }
   }

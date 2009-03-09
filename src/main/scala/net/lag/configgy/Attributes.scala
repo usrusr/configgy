@@ -202,7 +202,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     recurse(key) match {
       case Some((attr, name)) => attr.setString(name, value)
       case None => cells.get(key.toLowerCase) match {
-        case Some(AttributesCell(x)) => throw new ConfigException("Illegal key " + key)
+        case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
         case _ => cells.put(key.toLowerCase, new StringCell(value))
       }
     }
@@ -217,8 +217,27 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     recurse(key) match {
       case Some((attr, name)) => attr.setList(name, value)
       case None => cells.get(key.toLowerCase) match {
-        case Some(AttributesCell(x)) => throw new ConfigException("Illegal key " + key)
+        case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
         case _ => cells.put(key.toLowerCase, new StringListCell(value.toArray))
+      }
+    }
+  }
+
+  def setConfigMap(key: String, value: ConfigMap): Unit = {
+    if (monitored) {
+      config.deepSet(name, key, value)
+      return
+    }
+
+    recurse(key) match {
+      case Some((attr, name)) => attr.setConfigMap(name, value)
+      case None => cells.get(key.toLowerCase) match {
+        case Some(AttributesCell(_)) =>
+          cells.put(key.toLowerCase, new AttributesCell(value.copy.asInstanceOf[Attributes]))
+        case None =>
+          cells.put(key.toLowerCase, new AttributesCell(value.copy.asInstanceOf[Attributes]))
+        case _ =>
+          throw new ConfigException("Illegal key " + key)
       }
     }
   }

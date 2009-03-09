@@ -62,7 +62,7 @@ trait ConfigMap {
    * that key, it's replaced.
    *
    * @throws ConfigException if the key already refers to a nested
-   *     AttributeMap
+   *     ConfigMap
    */
   def setString(key: String, value: String): Unit
 
@@ -71,9 +71,18 @@ trait ConfigMap {
    * that key, it's replaced.
    *
    * @throws ConfigException if the key already refers to a nested
-   *     AttributeMap
+   *     ConfigMap
    */
   def setList(key: String, value: Seq[String]): Unit
+
+  /**
+   * Put a nested ConfigMap inside this one. If an entry already existed with
+   * that key, it's replaced. The ConfigMap is deep-copied at insert-time.
+   *
+   * @throws ConfigException if the key already refers to a value that isn't
+   *     a nested ConfigMap
+   */
+  def setConfigMap(key: String, value: ConfigMap): Unit
 
   /**
    * Returns true if this map contains the given key.

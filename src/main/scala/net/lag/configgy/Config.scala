@@ -227,6 +227,10 @@ class Config extends ConfigMap {
     deepChange(name, key, { (newRoot, fullKey) => newRoot(fullKey) = value; true })
   }
 
+  private[configgy] def deepSet(name: String, key: String, value: ConfigMap) = {
+    deepChange(name, key, { (newRoot, fullKey) => newRoot.setConfigMap(fullKey, value); true })
+  }
+
   private[configgy] def deepRemove(name: String, key: String): Boolean = {
     deepChange(name, key, { (newRoot, fullKey) => newRoot.remove(fullKey) })
   }
@@ -240,6 +244,7 @@ class Config extends ConfigMap {
   def getList(key: String): Seq[String] = root.getList(key)
   def setString(key: String, value: String): Unit = root.setString(key, value)
   def setList(key: String, value: Seq[String]): Unit = root.setList(key, value)
+  def setConfigMap(key: String, value: ConfigMap): Unit = root.setConfigMap(key, value)
   def contains(key: String): Boolean = root.contains(key)
   def remove(key: String): Boolean = root.remove(key)
   def keys: Iterator[String] = root.keys

@@ -35,6 +35,7 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
 
   def setString(key: String, value: String): Unit = error("read-only attributes")
   def setList(key: String, value: Seq[String]): Unit = error("read-only attributes")
+  def setConfigMap(key: String, value: ConfigMap): Unit = error("read-only attributes")
   def contains(key: String): Boolean = env.contains(key)
   def remove(key: String): Boolean = error("read-only attributes")
   def keys: Iterator[String] = env.keys

@@ -165,5 +165,16 @@ object AttributesSpec extends Specification {
       s.getList("hosts").toList mustEqual List("localhost", "skunk.example.com")
       s.getList("non-hosts").toList mustEqual Nil
     }
+
+    "add a nested ConfigMap" in {
+      val s = new Attributes(null, "")
+      val sub = new Attributes(null, "")
+      s("name") = "Sparky"
+      sub("name") = "Muffy"
+      s.setConfigMap("dog", sub)
+      s.toString mustEqual "{: dog={: name=\"Muffy\" } name=\"Sparky\" }"
+      sub("age") = 10
+      s.toString mustEqual "{: dog={: name=\"Muffy\" } name=\"Sparky\" }"
+    }
   }
 }

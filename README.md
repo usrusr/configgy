@@ -419,5 +419,5 @@ with a cleaner interface.
 ## Contact
 
 Configgy was written by Robey Pointer <robeypointer@gmail.com> and is licensed
-under the ISC license (included). Please write me with questions or comments,
-but the software is provided as-is.
+under the Apache 2 license (included). Please write me with questions or
+comments, but the software is provided as-is.

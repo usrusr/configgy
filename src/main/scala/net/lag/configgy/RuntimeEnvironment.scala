@@ -54,7 +54,7 @@ class RuntimeEnvironment(cls: Class[_]) {
    * a valid `build.properties` file. Will return `None` if it couldn't
    * figure out the environment.
    */
-  def getJarPath: Option[String] = {
+  lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
     val found = System.getProperty("java.class.path") split System.getProperty("path.separator") map {
       _ match {
@@ -69,7 +69,7 @@ class RuntimeEnvironment(cls: Class[_]) {
    * Config filename, as determined from this jar's runtime path, possibly
    * overridden by a command-line option.
    */
-  var configFilename: String = getJarPath match {
+  var configFilename: String = jarPath match {
     case Some(path) => path + "/config/" + jarName + ".conf"
     case None => "/etc/" + jarName + ".conf"
   }

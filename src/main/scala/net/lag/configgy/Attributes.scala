@@ -299,7 +299,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   // (and find "\$" and replace them with "$")
   private val INTERPOLATE_RE = """(?<!\\)\$\((\w[\w\d\._-]*)\)|\\\$""".r
 
-  protected[configgy] def interpolate(s: String): String = {
+  protected[configgy] def interpolate(root: Attributes, s: String): String = {
     def lookup(key: String, path: List[ConfigMap]): String = {
       path match {
         case Nil => ""
@@ -313,18 +313,16 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     s.regexSub(INTERPOLATE_RE) { m =>
       if (m.matched == "\\$") {
         "$"
-      } else if (config == null) {
-        lookup(m.group(1), List(this, EnvironmentAttributes))
       } else {
-        lookup(m.group(1), List(this, config, EnvironmentAttributes))
+        lookup(m.group(1), List(this, root, EnvironmentAttributes))
       }
     }
   }
 
   protected[configgy] def interpolate(key: String, s: String): String = {
     recurse(key) match {
-      case Some((attr, name)) => attr.interpolate(s)
-      case None => interpolate(s)
+      case Some((attr, name)) => attr.interpolate(this, s)
+      case None => interpolate(this, s)
     }
   }
 

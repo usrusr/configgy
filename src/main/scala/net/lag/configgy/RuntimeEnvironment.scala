@@ -1,6 +1,17 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
@@ -43,7 +54,7 @@ class RuntimeEnvironment(cls: Class[_]) {
    * a valid `build.properties` file. Will return `None` if it couldn't
    * figure out the environment.
    */
-  def getJarPath: Option[String] = {
+  lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
     val found = System.getProperty("java.class.path") split System.getProperty("path.separator") map {
       _ match {
@@ -58,7 +69,7 @@ class RuntimeEnvironment(cls: Class[_]) {
    * Config filename, as determined from this jar's runtime path, possibly
    * overridden by a command-line option.
    */
-  var configFilename: String = getJarPath match {
+  var configFilename: String = jarPath match {
     case Some(path) => path + "/config/" + jarName + ".conf"
     case None => "/etc/" + jarName + ".conf"
   }

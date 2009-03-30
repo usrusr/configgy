@@ -1,11 +1,23 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
 
 import java.util.regex.Pattern
+import javax.{management => jmx}
 import scala.collection.{immutable, mutable, Map}
 import net.lag.extensions._
 
@@ -96,13 +108,13 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
    * return the nested Attributes block and simple key that can be used to
    * make a recursive call. If the key is simple, return None.
    *
-   * <p> If the key is compound, but nested Attributes objects don't exist
+   * If the key is compound, but nested Attributes objects don't exist
    * that match the key, an attempt will be made to create the nested
    * Attributes objects. If one of the key segments already refers to an
    * attribute that isn't a nested Attribute object, a ConfigException
    * will be thrown.
    *
-   * <p> For example, for the key "a.b.c", the Attributes object for "a.b"
+   * For example, for the key "a.b.c", the Attributes object for "a.b"
    * and the key "c" will be returned, creating the "a.b" Attributes object
    * if necessary. If "a" or "a.b" exists but isn't a nested Attributes
    * object, then an ConfigException will be thrown.
@@ -122,6 +134,25 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       }
     } else {
       None
+    }
+  }
+
+  def replaceWith(newAttributes: Attributes): Unit = {
+    // stash away subnodes and reinsert them.
+    val subnodes = cells.map {
+      case (key, cell: AttributesCell) => (key, cell)
+      case _ => null
+    }.filter { _ != null }.toList
+    cells.clear
+    cells ++= newAttributes.cells
+    for ((key, cell) <- subnodes) {
+      newAttributes.cells.get(key) match {
+        case Some(AttributesCell(newattr)) =>
+          cell.attr.replaceWith(newattr)
+          cells(key) = cell
+        case None =>
+          cell.attr.replaceWith(new Attributes(config, ""))
+      }
     }
   }
 
@@ -182,7 +213,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     recurse(key) match {
       case Some((attr, name)) => attr.setString(name, value)
       case None => cells.get(key.toLowerCase) match {
-        case Some(AttributesCell(x)) => throw new ConfigException("Illegal key " + key)
+        case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
         case _ => cells.put(key.toLowerCase, new StringCell(value))
       }
     }
@@ -197,8 +228,27 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     recurse(key) match {
       case Some((attr, name)) => attr.setList(name, value)
       case None => cells.get(key.toLowerCase) match {
-        case Some(AttributesCell(x)) => throw new ConfigException("Illegal key " + key)
+        case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
         case _ => cells.put(key.toLowerCase, new StringListCell(value.toArray))
+      }
+    }
+  }
+
+  def setConfigMap(key: String, value: ConfigMap): Unit = {
+    if (monitored) {
+      config.deepSet(name, key, value)
+      return
+    }
+
+    recurse(key) match {
+      case Some((attr, name)) => attr.setConfigMap(name, value)
+      case None => cells.get(key.toLowerCase) match {
+        case Some(AttributesCell(_)) =>
+          cells.put(key.toLowerCase, new AttributesCell(value.copy.asInstanceOf[Attributes]))
+        case None =>
+          cells.put(key.toLowerCase, new AttributesCell(value.copy.asInstanceOf[Attributes]))
+        case _ =>
+          throw new ConfigException("Illegal key " + key)
       }
     }
   }
@@ -249,7 +299,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   // (and find "\$" and replace them with "$")
   private val INTERPOLATE_RE = """(?<!\\)\$\((\w[\w\d\._-]*)\)|\\\$""".r
 
-  protected[configgy] def interpolate(s: String): String = {
+  protected[configgy] def interpolate(root: Attributes, s: String): String = {
     def lookup(key: String, path: List[ConfigMap]): String = {
       path match {
         case Nil => ""
@@ -263,18 +313,16 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     s.regexSub(INTERPOLATE_RE) { m =>
       if (m.matched == "\\$") {
         "$"
-      } else if (config == null) {
-        lookup(m.group(1), List(this, EnvironmentAttributes))
       } else {
-        lookup(m.group(1), List(this, config, EnvironmentAttributes))
+        lookup(m.group(1), List(this, root, EnvironmentAttributes))
       }
     }
   }
 
   protected[configgy] def interpolate(key: String, s: String): String = {
     recurse(key) match {
-      case Some((attr, name)) => attr.interpolate(s)
-      case None => interpolate(s)
+      case Some((attr, name)) => attr.interpolate(this, s)
+      case None => interpolate(this, s)
     }
   }
 
@@ -303,7 +351,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   // make a deep copy of the Attributes tree.
-  def copy: Attributes = {
+  def copy(): Attributes = {
     val out = new Attributes(config, name)
     for (val (key, value) <- cells.elements) {
       value match {
@@ -311,9 +359,41 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
         case StringListCell(x) => out(key) = x
         case AttributesCell(x) =>
           val attr = x.copy
-          out.cells += Pair(key, new AttributesCell(attr))
+          out.cells += (key -> new AttributesCell(attr))
       }
     }
     out
+  }
+
+  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = {
+    cells.map { case (key, value) =>
+      value match {
+        case StringCell(_) =>
+          new jmx.MBeanAttributeInfo(key, "java.lang.String", "", true, true, false)
+        case StringListCell(_) =>
+          new jmx.MBeanAttributeInfo(key, "java.util.List", "", true, true, false)
+        case AttributesCell(_) =>
+          null
+      }
+    }.filter { x => x != null }.toList.toArray
+  }
+
+  def asJmxDisplay(key: String): AnyRef = {
+    cells.get(key) match {
+      case Some(StringCell(x)) => x
+      case Some(StringListCell(x)) => java.util.Arrays.asList(x: _*)
+      case x => null
+    }
+  }
+
+  def getJmxNodes(prefix: String, name: String): List[(String, JmxWrapper)] = {
+    (prefix + ":type=Config,name=" + (if (name == "") "(root)" else name), new JmxWrapper(this)) :: cells.flatMap { item =>
+      val (key, value) = item
+      value match {
+        case AttributesCell(x) =>
+          x.getJmxNodes(prefix, if (name == "") key else (name + "." + key))
+        case _ => Nil
+      }
+    }.toList
   }
 }

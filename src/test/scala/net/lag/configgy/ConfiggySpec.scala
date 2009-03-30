@@ -1,6 +1,17 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
@@ -183,6 +194,39 @@ object ConfiggySpec extends Specification with TestHelper {
         checked mustBe true
         checkedAlso mustBe true
         Configgy.config.getInt("robot.age", 0) mustEqual 23003
+      }
+    }
+
+    "change a nested value without invalidating ConfigMap references" in {
+      withTempFolder {
+        val data1 =
+          "<robot>\n" +
+          "    name=\"Nibbler\"\n" +
+          "    age = 23002\n" +
+          "    nested {\n" +
+          "        thing = 5\n"
+          "    }\n" +
+          "</robot>\n"
+        writeConfigFile("test.conf", data1)
+        Configgy.configure(folderName, "test.conf")
+
+        val robot = Configgy.config.configMap("robot")
+        robot.getString("name") mustEqual Some("Nibbler")
+        robot.setString("name", "Bender")
+        robot.getString("name") mustEqual Some("Bender")
+        val nested = Configgy.config.configMap("robot.nested")
+        nested("thing") mustEqual "5"
+        robot("age") mustEqual "23002"
+
+        val data2 =
+          "<robot>\n" +
+          "    name=\"Nibbler\"\n" +
+          "    age = 23004\n" +
+          "</robot>\n"
+        writeConfigFile("test.conf", data2)
+        Configgy.reload
+        nested.toString mustEqual "{robot.nested: }"
+        robot("age") mustEqual "23004"
       }
     }
   }

@@ -1,11 +1,24 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
 
 import java.io.File
+import java.lang.management.ManagementFactory
+import javax.{management => jmx}
 import scala.collection.{Map, Set}
 import scala.collection.{immutable, mutable}
 import net.lag.extensions._
@@ -103,6 +116,11 @@ class Config extends ConfigMap {
   private val subscriberKeys = new mutable.HashMap[Int, (SubscriptionNode, Subscriber)]
   private var nextKey = 1
 
+  private var jmxNodes: List[String] = Nil
+  private var jmxPackageName: String = ""
+  private var jmxSubscriptionKey: Option[SubscriptionKey] = None
+
+
   /**
    * Importer for resolving "include" lines when loading config files.
    * By default, it's a FilesystemImporter based on the current working
@@ -115,20 +133,17 @@ class Config extends ConfigMap {
    * Read config data from a string and use it to populate this object.
    */
   def load(data: String) = {
-    if (root.isMonitored) {
-      // reload: swap, validate, and replace.
-      var newRoot = new Attributes(this, "")
-      new ConfigParser(newRoot, importer).parse(data)
+    var newRoot = new Attributes(this, "")
+    new ConfigParser(newRoot, importer).parse(data)
 
+    if (root.isMonitored) {
       // throws exception if validation fails:
       subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
       subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
-
-      root = newRoot
-    } else {
-      new ConfigParser(root, importer).parse(data)
     }
-    root.setMonitored
+
+    if (root.isMonitored) newRoot.setMonitored
+    root.replaceWith(newRoot)
   }
 
   /**
@@ -198,6 +213,48 @@ class Config extends ConfigMap {
     "subs=" + subscribers.toString
   }
 
+  /**
+   * Un-register this object from JMX. Any existing JMX nodes for this config object will vanish.
+   */
+  def unregisterWithJmx() = {
+    val mbs = ManagementFactory.getPlatformMBeanServer()
+    for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
+    jmxNodes = Nil
+    for (key <- jmxSubscriptionKey) unsubscribe(key)
+    jmxSubscriptionKey = None
+  }
+
+  /**
+   * Register this object as a tree of JMX nodes that can be used to view and modify the config.
+   * This has the effect of subscribing to the root node, in order to reflect changes to the
+   * config object in JMX.
+   *
+   * @param packageName the name (usually your app's package name) that config objects should
+   *     appear inside
+   */
+  def registerWithJmx(packageName: String): Unit = {
+    val mbs = ManagementFactory.getPlatformMBeanServer()
+    val nodes = root.getJmxNodes(packageName, "")
+    val nodeNames = nodes.map { case (name, bean) => name }
+    // register any new nodes
+    nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
+      try {
+        mbs.registerMBean(bean, new jmx.ObjectName(name))
+      } catch {
+        case x: jmx.InstanceAlreadyExistsException =>
+          // happens in unit tests.
+      }
+    }
+    // unregister nodes that vanished
+    (jmxNodes -- nodeNames).foreach { name => mbs.unregisterMBean(new jmx.ObjectName(name)) }
+
+    jmxNodes = nodeNames
+    jmxPackageName = packageName
+    if (jmxSubscriptionKey == None) {
+      jmxSubscriptionKey = Some(subscribe { _ => registerWithJmx(packageName) })
+    }
+  }
+
 
   // -----  modifications that happen within monitored Attributes nodes
 
@@ -215,8 +272,8 @@ class Config extends ConfigMap {
     subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
     subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
 
-    newRoot.setMonitored
-    root = newRoot
+    if (root.isMonitored) newRoot.setMonitored
+    root.replaceWith(newRoot)
     true
   }
 
@@ -226,6 +283,10 @@ class Config extends ConfigMap {
 
   private[configgy] def deepSet(name: String, key: String, value: Seq[String]) = {
     deepChange(name, key, { (newRoot, fullKey) => newRoot(fullKey) = value; true })
+  }
+
+  private[configgy] def deepSet(name: String, key: String, value: ConfigMap) = {
+    deepChange(name, key, { (newRoot, fullKey) => newRoot.setConfigMap(fullKey, value); true })
   }
 
   private[configgy] def deepRemove(name: String, key: String): Boolean = {
@@ -241,10 +302,12 @@ class Config extends ConfigMap {
   def getList(key: String): Seq[String] = root.getList(key)
   def setString(key: String, value: String): Unit = root.setString(key, value)
   def setList(key: String, value: Seq[String]): Unit = root.setList(key, value)
+  def setConfigMap(key: String, value: ConfigMap): Unit = root.setConfigMap(key, value)
   def contains(key: String): Boolean = root.contains(key)
   def remove(key: String): Boolean = root.remove(key)
   def keys: Iterator[String] = root.keys
-  def asMap(): Map[String, String] = root.asMap
+  def asMap(): Map[String, String] = root.asMap()
+  def copy(): ConfigMap = root.copy()
 }
 
 

@@ -1,6 +1,17 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
@@ -62,7 +73,7 @@ trait ConfigMap {
    * that key, it's replaced.
    *
    * @throws ConfigException if the key already refers to a nested
-   *     AttributeMap
+   *     ConfigMap
    */
   def setString(key: String, value: String): Unit
 
@@ -71,9 +82,18 @@ trait ConfigMap {
    * that key, it's replaced.
    *
    * @throws ConfigException if the key already refers to a nested
-   *     AttributeMap
+   *     ConfigMap
    */
   def setList(key: String, value: Seq[String]): Unit
+
+  /**
+   * Put a nested ConfigMap inside this one. If an entry already existed with
+   * that key, it's replaced. The ConfigMap is deep-copied at insert-time.
+   *
+   * @throws ConfigException if the key already refers to a value that isn't
+   *     a nested ConfigMap
+   */
+  def setConfigMap(key: String, value: ConfigMap): Unit
 
   /**
    * Returns true if this map contains the given key.
@@ -107,6 +127,11 @@ trait ConfigMap {
    * @return a key which can be used to cancel the subscription
    */
   def subscribe(subscriber: Subscriber): SubscriptionKey
+
+  /**
+   * Make a deep copy of this ConfigMap.
+   */
+  def copy(): ConfigMap
 
 
   // -----  convenience methods
@@ -235,8 +260,8 @@ trait ConfigMap {
   }
 
   /**
-   * Subscribe to changes on this AttributeMap, but don't bother with
-   * validating. Whenever this AttributeMap changes, a new copy will be
+   * Subscribe to changes on this ConfigMap, but don't bother with
+   * validating. Whenever this ConfigMap changes, a new copy will be
    * passed to the given function.
    */
   def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {

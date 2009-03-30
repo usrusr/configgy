@@ -1,6 +1,17 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
@@ -18,8 +29,7 @@ object Configgy {
 
   /**
    * The base Config object for this server. This will only be defined
-   * after calling one of <code>configure</code> or
-   * <code>configureFromResource</code>.
+   * after calling one of `configure` or `configureFromResource`.
    */
   def config = _config
 
@@ -57,7 +67,7 @@ object Configgy {
 
   /**
    * Reload the previously-loaded config file from disk. Any changes will
-   * take effect immediately. <b>All</b> subscribers will be called to
+   * take effect immediately. **All** subscribers will be called to
    * verify and commit the change (even if their nodes didn't actually
    * change).
    */

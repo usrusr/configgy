@@ -1,6 +1,17 @@
 /*
- * Copyright (c) 2008, Robey Pointer <robeypointer@gmail.com>
- * ISC licensed. Please see the included LICENSE file for more information.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package net.lag.configgy
@@ -27,7 +38,10 @@ object ConfigSpec extends Specification with TestHelper {
     def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
     def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
       used = true
-      savedCurrent = current
+      savedCurrent = current match {
+        case None => None
+        case Some(x) => Some(x.asInstanceOf[Attributes].copy)
+      }
       savedReplacement = replacement
     }
   }
@@ -90,7 +104,7 @@ object ConfigSpec extends Specification with TestHelper {
       c("alpha.beta.gamma") = "hello"
 
       c.subscribe("alpha.beta", new AngrySubscriber)
-      (c("alpha.beta.gamma") = "gutentag") must throwA(new ValidationException(""))
+      (c("alpha.beta.gamma") = "gutentag") must throwA(new ValidationException("no way!"))
       c("alpha.giraffe") = "tall!"
       c.toString mustEqual "{: alpha={alpha: beta={alpha.beta: gamma=\"hello\" } giraffe=\"tall!\" } }"
     }
@@ -123,7 +137,7 @@ object ConfigSpec extends Specification with TestHelper {
       c.getConfigMap("forest").get.toString mustEqual
         "{forest: fires={forest.fires: are=\"bad\" } matches=\"false\" }"
 
-      c.remove("forest") must throwA(new ValidationException(""))
+      c.remove("forest") must throwA(new ValidationException("no way!"))
 
       rootsub.used = false
       betasub.used = false

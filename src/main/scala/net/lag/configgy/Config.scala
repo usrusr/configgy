@@ -133,20 +133,17 @@ class Config extends ConfigMap {
    * Read config data from a string and use it to populate this object.
    */
   def load(data: String) = {
-    if (root.isMonitored) {
-      // reload: swap, validate, and replace.
-      var newRoot = new Attributes(this, "")
-      new ConfigParser(newRoot, importer).parse(data)
+    var newRoot = new Attributes(this, "")
+    new ConfigParser(newRoot, importer).parse(data)
 
+    if (root.isMonitored) {
       // throws exception if validation fails:
       subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
       subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
-
-      newRoot.setMonitored
-      root.replaceWith(newRoot)
-    } else {
-      new ConfigParser(root, importer).parse(data)
     }
+
+    if (root.isMonitored) newRoot.setMonitored
+    root.replaceWith(newRoot)
   }
 
   /**

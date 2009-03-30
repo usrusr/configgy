@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import java.io.File
+import javax.{management => jmx}
 import scala.collection.{Map, Set}
 import scala.collection.{immutable, mutable}
 import net.lag.extensions._
@@ -114,6 +115,10 @@ class Config extends ConfigMap {
   private val subscriberKeys = new mutable.HashMap[Int, (SubscriptionNode, Subscriber)]
   private var nextKey = 1
 
+  private var jmxNodes: List[String] = Nil
+  private var jmxPackageName: String = ""
+
+
   /**
    * Importer for resolving "include" lines when loading config files.
    * By default, it's a FilesystemImporter based on the current working
@@ -135,6 +140,7 @@ class Config extends ConfigMap {
       subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
       subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
 
+      newRoot.setMonitored
       root.replaceWith(newRoot)
     } else {
       new ConfigParser(root, importer).parse(data)
@@ -209,11 +215,41 @@ class Config extends ConfigMap {
     "subs=" + subscribers.toString
   }
 
+  def unregisterWithJmx() = {
+    val mbs = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
+    jmxNodes = Nil
+  }
+
+  def registerWithJmx(packageName: String) = {
+    root.setMonitored
+    val mbs = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    logging.Logger.get.warning("--> register")
+    val nodes = root.getJmxNodes(packageName, "")
+    logging.Logger.get.warning("<-- register")
+    val nodeNames = nodes.map { case (name, bean) => name }
+    // register any new nodes
+    nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
+      try {
+        mbs.registerMBean(bean, new jmx.ObjectName(name))
+      } catch {
+        case x: jmx.InstanceAlreadyExistsException =>
+          // happens in unit tests.
+      }
+    }
+    // unregister nodes that vanished
+    (jmxNodes -- nodeNames).foreach { name => mbs.unregisterMBean(new jmx.ObjectName(name)) }
+
+    jmxNodes = nodeNames
+    jmxPackageName = packageName
+  }
+
 
   // -----  modifications that happen within monitored Attributes nodes
 
   @throws(classOf[ValidationException])
   private def deepChange(name: String, key: String, operation: (ConfigMap, String) => Boolean): Boolean = synchronized {
+    logging.Logger.get.warning("----- ackkkkk deep change %s", name)
     val fullKey = if (name == "") (key) else (name + "." + key)
     val newRoot = root.copy
     val keyList = fullKey.split("\\.").toList
@@ -226,7 +262,11 @@ class Config extends ConfigMap {
     subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
     subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
 
+    newRoot.setMonitored
     root.replaceWith(newRoot)
+    if (jmxNodes != Nil) {
+      registerWithJmx(jmxPackageName)
+    }
     true
   }
 

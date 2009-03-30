@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import java.util.regex.Pattern
+import javax.{management => jmx}
 import scala.collection.{immutable, mutable, Map}
 import net.lag.extensions._
 
@@ -138,11 +139,10 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   def replaceWith(newAttributes: Attributes): Unit = {
     // stash away subnodes and reinsert them.
-    val subnodes = cells.filter { item =>
-      item._2.isInstanceOf[AttributesCell]
-    }.map { item =>
-      (item._1, item._2.asInstanceOf[AttributesCell])
-    }.toList
+    val subnodes = cells.map {
+      case (key, cell: AttributesCell) => (key, cell)
+      case _ => null
+    }.filter { _ != null }.toList
     cells.clear
     cells ++= newAttributes.cells
     for ((key, cell) <- subnodes) {
@@ -205,6 +205,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def setString(key: String, value: String): Unit = {
+    logging.Logger.get.warning("setString %s on %s monitored=%s", key, this, monitored)
     if (monitored) {
       config.deepSet(name, key, value)
       return
@@ -365,5 +366,37 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       }
     }
     out
+  }
+
+  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = {
+    cells.map { case (key, value) =>
+      value match {
+        case StringCell(_) =>
+          new jmx.MBeanAttributeInfo(key, "java.lang.String", "", true, true, false)
+        case StringListCell(_) =>
+          new jmx.MBeanAttributeInfo(key, "java.util.List", "", true, true, false)
+        case AttributesCell(_) =>
+          null
+      }
+    }.filter { x => x != null }.toList.toArray
+  }
+
+  def asJmxDisplay(key: String): AnyRef = {
+    cells.get(key) match {
+      case Some(StringCell(x)) => x
+      case Some(StringListCell(x)) => java.util.Arrays.asList(x: _*)
+      case x => null
+    }
+  }
+
+  def getJmxNodes(prefix: String, name: String): List[(String, JmxWrapper)] = {
+    (prefix + ":type=Config,name=" + (if (name == "") "(root)" else name), new JmxWrapper(this)) :: cells.flatMap { item =>
+      val (key, value) = item
+      value match {
+        case AttributesCell(x) =>
+          x.getJmxNodes(prefix, if (name == "") key else (name + "." + key))
+        case _ => Nil
+      }
+    }.toList
   }
 }

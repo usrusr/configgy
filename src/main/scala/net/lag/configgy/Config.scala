@@ -213,6 +213,9 @@ class Config extends ConfigMap {
     "subs=" + subscribers.toString
   }
 
+  /**
+   * Un-register this object from JMX. Any existing JMX nodes for this config object will vanish.
+   */
   def unregisterWithJmx() = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
     for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
@@ -221,6 +224,14 @@ class Config extends ConfigMap {
     jmxSubscriptionKey = None
   }
 
+  /**
+   * Register this object as a tree of JMX nodes that can be used to view and modify the config.
+   * This has the effect of subscribing to the root node, in order to reflect changes to the
+   * config object in JMX.
+   *
+   * @param packageName the name (usually your app's package name) that config objects should
+   *     appear inside
+   */
   def registerWithJmx(packageName: String): Unit = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
     val nodes = root.getJmxNodes(packageName, "")

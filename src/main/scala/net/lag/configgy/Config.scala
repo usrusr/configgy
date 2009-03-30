@@ -22,7 +22,6 @@ import javax.{management => jmx}
 import scala.collection.{Map, Set}
 import scala.collection.{immutable, mutable}
 import net.lag.extensions._
-import net.lag.logging.Logger
 
 
 private abstract class Phase
@@ -251,7 +250,7 @@ class Config extends ConfigMap {
     jmxNodes = nodeNames
     jmxPackageName = packageName
     if (jmxSubscriptionKey == None) {
-      jmxSubscriptionKey = Some(subscribe("") { _ => registerWithJmx(packageName) })
+      jmxSubscriptionKey = Some(subscribe { _ => registerWithJmx(packageName) })
     }
   }
 

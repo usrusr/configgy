@@ -53,6 +53,8 @@ class FileHandler(val filename: String, val policy: Policy, formatter: Formatter
   }
 
   private def openLog() = {
+    val dir = new File(filename).getParentFile
+    if (!dir.exists) dir.mkdirs
     stream = new OutputStreamWriter(new FileOutputStream(filename, append), "UTF-8")
     openTime = System.currentTimeMillis
     nextRollTime = computeNextRollTime()

@@ -22,6 +22,7 @@ import javax.{management => jmx}
 import scala.collection.{Map, Set}
 import scala.collection.{immutable, mutable}
 import net.lag.extensions._
+import net.lag.logging.Logger
 
 
 private abstract class Phase

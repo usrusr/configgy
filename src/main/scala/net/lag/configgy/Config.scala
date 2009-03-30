@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import java.io.File
+import java.lang.management.ManagementFactory
 import javax.{management => jmx}
 import scala.collection.{Map, Set}
 import scala.collection.{immutable, mutable}
@@ -117,6 +118,7 @@ class Config extends ConfigMap {
 
   private var jmxNodes: List[String] = Nil
   private var jmxPackageName: String = ""
+  private var jmxSubscriptionKey: Option[SubscriptionKey] = None
 
 
   /**
@@ -145,7 +147,6 @@ class Config extends ConfigMap {
     } else {
       new ConfigParser(root, importer).parse(data)
     }
-    root.setMonitored
   }
 
   /**
@@ -216,17 +217,16 @@ class Config extends ConfigMap {
   }
 
   def unregisterWithJmx() = {
-    val mbs = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    val mbs = ManagementFactory.getPlatformMBeanServer()
     for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
     jmxNodes = Nil
+    for (key <- jmxSubscriptionKey) unsubscribe(key)
+    jmxSubscriptionKey = None
   }
 
-  def registerWithJmx(packageName: String) = {
-    root.setMonitored
-    val mbs = java.lang.management.ManagementFactory.getPlatformMBeanServer()
-    logging.Logger.get.warning("--> register")
+  def registerWithJmx(packageName: String): Unit = {
+    val mbs = ManagementFactory.getPlatformMBeanServer()
     val nodes = root.getJmxNodes(packageName, "")
-    logging.Logger.get.warning("<-- register")
     val nodeNames = nodes.map { case (name, bean) => name }
     // register any new nodes
     nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
@@ -242,6 +242,9 @@ class Config extends ConfigMap {
 
     jmxNodes = nodeNames
     jmxPackageName = packageName
+    if (jmxSubscriptionKey == None) {
+      jmxSubscriptionKey = Some(subscribe("") { _ => registerWithJmx(packageName) })
+    }
   }
 
 
@@ -249,7 +252,6 @@ class Config extends ConfigMap {
 
   @throws(classOf[ValidationException])
   private def deepChange(name: String, key: String, operation: (ConfigMap, String) => Boolean): Boolean = synchronized {
-    logging.Logger.get.warning("----- ackkkkk deep change %s", name)
     val fullKey = if (name == "") (key) else (name + "." + key)
     val newRoot = root.copy
     val keyList = fullKey.split("\\.").toList
@@ -262,11 +264,8 @@ class Config extends ConfigMap {
     subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
     subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
 
-    newRoot.setMonitored
+    if (root.isMonitored) newRoot.setMonitored
     root.replaceWith(newRoot)
-    if (jmxNodes != Nil) {
-      registerWithJmx(jmxPackageName)
-    }
     true
   }
 

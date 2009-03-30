@@ -205,7 +205,6 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   def setString(key: String, value: String): Unit = {
-    logging.Logger.get.warning("setString %s on %s monitored=%s", key, this, monitored)
     if (monitored) {
       config.deepSet(name, key, value)
       return

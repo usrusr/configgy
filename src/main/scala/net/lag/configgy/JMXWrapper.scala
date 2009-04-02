@@ -29,22 +29,22 @@ class JmxWrapper(node: Attributes) extends jmx.DynamicMBean {
     new jmx.MBeanOperationInfo("set", "set a string value",
       Array(
         new jmx.MBeanParameterInfo("key", "java.lang.String", "config key"),
-        new jmx.MBeanParameterInfo("value", "java.lang.String", "string value"),
+        new jmx.MBeanParameterInfo("value", "java.lang.String", "string value")
       ), "void", jmx.MBeanOperationInfo.ACTION),
     new jmx.MBeanOperationInfo("remove", "remove a value",
       Array(
-        new jmx.MBeanParameterInfo("key", "java.lang.String", "config key"),
+        new jmx.MBeanParameterInfo("key", "java.lang.String", "config key")
       ), "void", jmx.MBeanOperationInfo.ACTION),
     new jmx.MBeanOperationInfo("add_list", "append a value to a list",
       Array(
         new jmx.MBeanParameterInfo("key", "java.lang.String", "config key"),
-        new jmx.MBeanParameterInfo("value", "java.lang.String", "value"),
+        new jmx.MBeanParameterInfo("value", "java.lang.String", "value")
       ), "void", jmx.MBeanOperationInfo.ACTION),
     new jmx.MBeanOperationInfo("remove_list", "remove a value to a list",
       Array(
         new jmx.MBeanParameterInfo("key", "java.lang.String", "config key"),
-        new jmx.MBeanParameterInfo("value", "java.lang.String", "value"),
-      ), "void", jmx.MBeanOperationInfo.ACTION),
+        new jmx.MBeanParameterInfo("value", "java.lang.String", "value")
+      ), "void", jmx.MBeanOperationInfo.ACTION)
   )
 
   def getMBeanInfo() = {

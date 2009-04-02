@@ -286,6 +286,8 @@ in config blocks inside `<log>`. For example:
         </squelch_noisy>
     </log>
 
+(You don't have to name the block "squelch_noisy"; they can have any name.)
+
 The "com.example.libnoise" node will log at "critical" level (presumably to
 silence a noisy library), while everything else will log at "warning" level.
 You can put any of the logging options inside these blocks, including those

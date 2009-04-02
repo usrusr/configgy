@@ -344,14 +344,23 @@ object Config {
   }
 
   /**
-   * Create a Config object from the given named
-   * resource inside this jar file. "include" lines will also operate
+   * Create a Config object from the given named resource inside this jar
+   * file, using the system class loader. "include" lines will also operate
    * on resource paths.
    */
-  def fromResource(name: String) = {
+  def fromResource(name: String): Config = {
+    fromResource(name, ClassLoader.getSystemClassLoader)
+  }
+
+  /**
+   * Create a Config object from the given named resource inside this jar
+   * file, using a specific class loader. "include" lines will also operate
+   * on resource paths.
+   */
+  def fromResource(name: String, classLoader: ClassLoader): Config = {
     val config = new Config
     try {
-      config.importer = new ResourceImporter
+      config.importer = new ResourceImporter(classLoader)
       config.loadFile(name)
     } catch {
       case e: Throwable =>

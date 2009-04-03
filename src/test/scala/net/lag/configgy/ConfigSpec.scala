@@ -181,7 +181,7 @@ object ConfigSpec extends Specification with TestHelper {
         f1.close
 
         val c = new Config
-        c.importer = new ResourceImporter
+        c.importer = new ResourceImporter(ClassLoader.getSystemClassLoader)
         c.load("include \"happy.conf\"\n")
         c.toString mustEqual "{: commie=\"501\" }"
       } finally {

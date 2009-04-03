@@ -17,6 +17,8 @@
 package net.lag.configgy
 
 import java.io.{File, FileOutputStream}
+import java.lang.management.ManagementFactory
+import javax.{management => jmx}
 import net.lag.TestHelper
 
 import org.specs._
@@ -195,6 +197,15 @@ object ConfigSpec extends Specification with TestHelper {
       c("oranges") mustEqual "17"
       c("fruit.misc") mustEqual "x,y,z"
       c.toString mustEqual "{: apples=\"23\" fruit={fruit: misc=\"x,y,z\" } oranges=\"17\" }"
+    }
+
+    "register jmx" in {
+      val c = Config.fromMap(Map("apples" -> "23", "oranges" -> "17", "fruit.misc" -> "x,y,z"))
+      c.registerWithJmx("com.example.test")
+      val mbs = ManagementFactory.getPlatformMBeanServer()
+      mbs.getAttribute(new jmx.ObjectName("com.example.test:type=Config,name=(root)"), "apples") mustEqual "23"
+      mbs.getAttribute(new jmx.ObjectName("com.example.test:type=Config,name=(root)"), "oranges") mustEqual "17"
+      mbs.getAttribute(new jmx.ObjectName("com.example.test:type=Config,name=fruit"), "misc") mustEqual "x,y,z"
     }
   }
 }

@@ -268,10 +268,12 @@ object LoggingSpec extends Specification with TestHelper {
 
 
     "roll logs on time" in {
-      val rollHandler = new FileHandler("/tmp/test.log", Hourly, new FileFormatter, true)
-      rollHandler.computeNextRollTime(1206769996722L) mustEqual 1206770400000L
-      rollHandler.computeNextRollTime(1206770400000L) mustEqual 1206774000000L
-      rollHandler.computeNextRollTime(1206774000001L) mustEqual 1206777600000L
+      withTempFolder {
+        val rollHandler = new FileHandler(folderName + "/test.log", Hourly, new FileFormatter, true)
+        rollHandler.computeNextRollTime(1206769996722L) mustEqual 1206770400000L
+        rollHandler.computeNextRollTime(1206770400000L) mustEqual 1206774000000L
+        rollHandler.computeNextRollTime(1206774000001L) mustEqual 1206777600000L
+      }
     }
 
     // verify that at the proper time, the log file rolls and resets.

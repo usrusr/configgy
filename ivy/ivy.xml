@@ -18,6 +18,6 @@
     <dependency org="org.scala-tools" name="vscaladoc" rev="1.1-md-3" conf="bootstrap->*" />
     <dependency org="markdownj" name="markdownj" rev="1.0.2b4-0.3.0" conf="bootstrap->*" />
     <dependency org="junit" name="junit" rev="4.4" />
-    <dependency org="org.specs" name="specs" rev="1.4.1" conf="bootstrap->*; test->*" />
+    <dependency org="org.scala-tools.testing" name="specs" rev="1.4.4" conf="bootstrap->*; test->*" />
   </dependencies>
 </ivy-module>

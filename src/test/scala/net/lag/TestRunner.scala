@@ -20,7 +20,9 @@ import java.io.File
 import org.specs.runner.SpecsFileRunner
 
 
-object TestRunner extends SpecsFileRunner("src/test/scala/**/*.scala", ".*")
+object TestRunner extends SpecsFileRunner("src/test/scala/**/*.scala", ".*",
+  System.getProperty("system", ".*"), System.getProperty("example", ".*"))
+
 
 trait TestHelper {
   private val _folderName = new ThreadLocal[File]

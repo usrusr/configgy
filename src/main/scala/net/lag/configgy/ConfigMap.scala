@@ -157,13 +157,13 @@ trait ConfigMap {
         try {
           Some(x.toInt)
         } catch {
-          case _ => None
+          case _: NumberFormatException => None
         }
       }
       case None => None
     }
   }
-
+  
   /**
    * If the requested key is present and can be converted into an int
    * (via `String.toInt`), return that int. Otherwise,
@@ -186,7 +186,7 @@ trait ConfigMap {
         try {
           Some(x.toLong)
         } catch {
-          case _ => None
+          case _: NumberFormatException => None
         }
       }
       case None => None

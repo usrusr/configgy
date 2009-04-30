@@ -91,7 +91,18 @@ object Configgy {
     _config = Config.fromResource(name)
     configLogging
   }
-
+  
+  /**
+   * Configure the server by loading a config file from the given named
+   * resource inside this jar file, using a specific class loader.
+   * "include" lines will also operate on resource paths.
+   */
+  def configureFromResource(name: String, classLoader: ClassLoader) = {
+    Logger.reset
+    _config = Config.fromResource(name, classLoader)
+    configLogging
+  }
+  
   private def configLogging = {
     val log = Logger.get("")
 

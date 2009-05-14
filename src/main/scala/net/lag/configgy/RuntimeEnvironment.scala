@@ -47,6 +47,7 @@ class RuntimeEnvironment(cls: Class[_]) {
   val jarVersion = buildProperties.getProperty("version", "0.0")
   val jarBuild = buildProperties.getProperty("build_name", "unknown")
   val jarBuildRevision = buildProperties.getProperty("build_revision", "unknown")
+  val stageName = System.getProperty("stage", "production")
 
 
   /**
@@ -56,13 +57,12 @@ class RuntimeEnvironment(cls: Class[_]) {
    */
   lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
-    val found = System.getProperty("java.class.path") split System.getProperty("path.separator") map {
-      _ match {
+    (System.getProperty("java.class.path") split System.getProperty("path.separator")).map { elem =>
+      elem match {
         case pattern(path) => Some(new File(path).getCanonicalPath)
         case _ => None
       }
-    } filter (_.isDefined)
-    found.firstOption.flatMap(x => x)
+    }.flatMap(identity[Option[String]]).firstOption
   }
 
   /**
@@ -70,7 +70,7 @@ class RuntimeEnvironment(cls: Class[_]) {
    * overridden by a command-line option.
    */
   var configFilename: String = jarPath match {
-    case Some(path) => path + "/config/" + jarName + ".conf"
+    case Some(path) => path + "/config/" + stageName + ".conf"
     case None => "/etc/" + jarName + ".conf"
   }
 

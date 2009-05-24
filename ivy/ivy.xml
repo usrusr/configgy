@@ -12,6 +12,7 @@
     <conf name="test" visibility="private" description="build and run tests" />
   </configurations>
   <publications>
+    <artifact />
     <artifact type="pom" />
   </publications>
   <dependencies>

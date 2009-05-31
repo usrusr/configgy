@@ -172,7 +172,7 @@ class Config extends ConfigMap {
     var subkey = nextKey
     nextKey += 1
     var node = subscribers
-    if (key != null) {
+    if (key ne null) {
       for (val segment <- key.split("\\.")) {
         node = node.get(segment)
       }

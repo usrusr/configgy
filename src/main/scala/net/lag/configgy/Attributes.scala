@@ -142,7 +142,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     val subnodes = cells.map {
       case (key, cell: AttributesCell) => (key, cell)
       case _ => null
-    }.filter { _ != null }.toList
+    }.filter { _ ne null }.toList
     cells.clear
     cells ++= newAttributes.cells
     for ((key, cell) <- subnodes) {
@@ -375,7 +375,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
         case AttributesCell(_) =>
           null
       }
-    }.filter { x => x != null }.toList.toArray
+    }.filter { x => x ne null }.toList.toArray
   }
 
   def asJmxDisplay(key: String): AnyRef = {

@@ -96,13 +96,13 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
    */
   def log(level: Level, thrown: Throwable, message: String, items: Any*): Unit = {
     val myLevel = getLevel
-    if ((myLevel == null) || (level.intValue >= myLevel.intValue)) {
+    if ((myLevel eq null) || (level.intValue >= myLevel.intValue)) {
       val record = new javalog.LogRecord(level, message)
       if (items.size > 0) {
         record.setParameters(items.toArray.asInstanceOf[Array[Object]])
       }
       record.setLoggerName(wrapped.getName)
-      if (thrown != null) {
+      if (thrown ne null) {
         record.setThrown(thrown)
       }
       wrapped.log(record)
@@ -137,10 +137,10 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
    */
   def logLazy(level: Level, thrown: Throwable, message: => AnyRef): Unit = {
     val myLevel = getLevel
-    if ((myLevel == null) || (level.intValue >= myLevel.intValue)) {
+    if ((myLevel eq null) || (level.intValue >= myLevel.intValue)) {
       val record = new LazyLogRecord(level, message)
       record.setLoggerName(wrapped.getName)
-      if (thrown != null) {
+      if (thrown ne null) {
         record.setThrown(thrown)
       }
       wrapped.log(record)
@@ -405,7 +405,7 @@ object Logger {
     }
 
     for (val handler <- handlers) {
-      if (level != null) {
+      if (level ne null) {
         handler.setLevel(level)
       }
       handler.useUtc = config.getBool("utc", false)

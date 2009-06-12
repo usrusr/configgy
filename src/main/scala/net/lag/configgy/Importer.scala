@@ -83,7 +83,7 @@ class ResourceImporter(classLoader: ClassLoader) extends Importer {
   def importFile(filename: String): String = {
     try {
       val stream = classLoader.getResourceAsStream(filename)
-      if (stream == null) {
+      if (stream eq null) {
         throw new ParseException("Can't find resource: " + filename)
       }
       streamToString(stream)

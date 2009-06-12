@@ -31,7 +31,7 @@ private[logging] object Formatter {
       out = new mutable.ArrayBuffer[String] ++ out.take(limit)
       out += "    (...more...)"
     }
-    if (t.getCause != null) {
+    if (t.getCause ne null) {
       out += "Caused by %s".format(t.getCause.toString)
       out ++= formatStackTrace(t.getCause, limit)
     }
@@ -169,7 +169,7 @@ abstract class Formatter extends javalog.Formatter {
     var lines = new mutable.ArrayBuffer[String]
     lines ++= message.split("\n")
 
-    if (record.getThrown != null) {
+    if (record.getThrown ne null) {
       lines += record.getThrown.toString
       lines ++= Formatter.formatStackTrace(record.getThrown, truncateStackTracesAt)
     }

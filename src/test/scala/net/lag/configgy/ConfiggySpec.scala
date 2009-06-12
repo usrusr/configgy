@@ -33,7 +33,7 @@ object ConfiggySpec extends Specification with TestHelper {
     val f = new BufferedReader(new InputStreamReader(new FileInputStream(folderName + "/" + filename)))
     var lines: List[String] = Nil
     var line = f.readLine
-    while (line != null) {
+    while (line ne null) {
       lines = (line.substring(0, 4) + line.substring(28)) :: lines
       line = f.readLine
     }

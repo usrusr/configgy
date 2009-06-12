@@ -157,13 +157,13 @@ trait ConfigMap {
         try {
           Some(x.toInt)
         } catch {
-          case _ => None
+          case _: NumberFormatException => None
         }
       }
       case None => None
     }
   }
-
+  
   /**
    * If the requested key is present and can be converted into an int
    * (via `String.toInt`), return that int. Otherwise,
@@ -186,7 +186,7 @@ trait ConfigMap {
         try {
           Some(x.toLong)
         } catch {
-          case _ => None
+          case _: NumberFormatException => None
         }
       }
       case None => None
@@ -200,6 +200,35 @@ trait ConfigMap {
    */
   def getLong(key: String, defaultValue: Long): Long = {
     getLong(key) match {
+      case Some(n) => n
+      case None => defaultValue
+    }
+  }
+  
+  /**
+   * If the requested key is present and can be converted into a double
+   * (via `String.toDouble`), return that double. Otherwise, return `None`.
+   */
+  def getDouble(key: String): Option[Double] = {
+    getString(key) match {
+      case Some(x) => {
+        try {
+          Some(x.toDouble)
+        } catch {
+          case _: NumberFormatException => None
+        }
+      }
+      case None => None
+    }
+  }
+
+  /**
+   * If the requested key is present and can be converted into a double
+   * (via `String.toDouble`), return that double. Otherwise,
+   * return the given default value.
+   */
+  def getDouble(key: String, defaultValue: Double): Double = {
+    getDouble(key) match {
       case Some(n) => n
       case None => defaultValue
     }
@@ -240,6 +269,12 @@ trait ConfigMap {
    * first.
    */
   def setLong(key: String, value: Long): Unit = setString(key, value.toString)
+  
+  /**
+   * Set the given key to a double value, by converting it to a string
+   * first.
+   */
+  def setDouble(key: String, value: Double): Unit = setString(key, value.toString)
 
   /**
    * Set the given key to a bool value, by converting it to a string

@@ -60,10 +60,10 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
     val ip = addr.getHostAddress
     val dns = addr.getHostName
 
-    if (ip != null) {
+    if (ip ne null) {
       env("HOSTIP") = ip
     }
-    if (dns != null) {
+    if (dns ne null) {
       env("HOSTNAME") = dns
     }
   } catch {

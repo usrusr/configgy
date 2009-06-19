@@ -131,6 +131,20 @@ object ConfigParserSpec extends Specification {
     "catch unknown block modifiers" in {
       parse("<upp name=\"fred\">\n</upp>\n") must throwA(new ParseException("Unknown block modifier"))
     }
+
+    "handle an outer scope after a closed block" in {
+      val data =
+        "alpha = 17\n" +
+        "<inner>\n" +
+        "    name = \"foo\"\n" +
+        "    <further>\n" +
+        "        age = 500\n" +
+        "    </further>\n" +
+        "    zipcode = 99999\n" +
+        "</inner>\n" +
+        "beta = 19\n"
+      parse(data).toString mustEqual "{: alpha=\"17\" beta=\"19\" inner={inner: further={inner.further: age=\"500\" } name=\"foo\" zipcode=\"99999\" } }"
+    }
   }
 
 

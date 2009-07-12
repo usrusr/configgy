@@ -216,7 +216,8 @@ start wanting after the code matures a bit.
 
 Previously-set config values can be included in new ones by using variable
 substitution, with shell syntax. This also pulls in values from the
-environment:
+current system properties and the environment, with properties taking
+precedence over the environment:
 
     server_home = "$(HOME)/servers/pingd"
     pid_file = "$(server_home)/pingd.pid"

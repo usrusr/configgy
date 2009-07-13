@@ -139,7 +139,7 @@ final class ConfiggyByteArray(wrapped: Array[Byte]) {
   def hexlify(): String = {
     val out = new StringBuffer
     for (val b <- wrapped) {
-      val s = b.toInt.toHexString
+      val s = (b.toInt & 0xff).toHexString
       if (s.length < 2) {
         out append '0'
       }

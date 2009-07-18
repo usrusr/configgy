@@ -129,7 +129,10 @@ trait ConfigMap {
   def subscribe(subscriber: Subscriber): SubscriptionKey
 
   /**
-   * Make a deep copy of this ConfigMap.
+   * Make a deep copy of this ConfigMap. Any inheritance chains will be
+   * deep-copied, but the inheritance will not be preserved: the copied
+   * ConfigMap stands alone as its own set of objects, reflecting the
+   * frozen state of any inherited ConfigMaps.
    */
   def copy(): ConfigMap
 

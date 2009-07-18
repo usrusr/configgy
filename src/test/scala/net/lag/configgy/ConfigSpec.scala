@@ -16,10 +16,10 @@
 
 package net.lag.configgy
 
-import java.io.{File, FileOutputStream}
-import java.lang.management.ManagementFactory
-import javax.{management => jmx}
-import net.lag.TestHelper
+import _root_.java.io.{File, FileOutputStream}
+import _root_.java.lang.management.ManagementFactory
+import _root_.javax.{management => jmx}
+import _root_.net.lag.TestHelper
 
 import org.specs._
 

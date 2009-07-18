@@ -120,7 +120,7 @@ final class ConfiggyString(wrapped: String) {
 
   /**
    * Turn a string of hex digits into a byte array. This does the exact
-   * opposite of <code>Array[Byte]#hexlify</code>.
+   * opposite of `Array[Byte]#hexlify`.
    */
   def unhexlify(): Array[Byte] = {
     val buffer = new Array[Byte](wrapped.length / 2)

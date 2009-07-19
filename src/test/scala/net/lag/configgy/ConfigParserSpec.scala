@@ -83,6 +83,11 @@ object ConfigParserSpec extends Specification {
     }
 
     "handle string lists" in {
+      val data2 = "cats = [\"Commie\", \"Buttons\", \"Sockington\"]"
+      val b = parse(data2)
+      b.getList("cats").toList mustEqual List("Commie", "Buttons", "Sockington")
+      b.getList("cats")(0) mustEqual "Commie"
+
       val data =
         "<home>\n" +
         "    states = [\"California\", \"Tennessee\", \"Idaho\"]\n" +

@@ -24,7 +24,7 @@ import net.lag.extensions._
 
 /**
  * An exception thrown when parsing a config file, if there was an error
- * during parsing. The <code>reason</code> string will contain the parsing
+ * during parsing. The `reason` string will contain the parsing
  * error details.
  */
 class ParseException(reason: String) extends Exception(reason)

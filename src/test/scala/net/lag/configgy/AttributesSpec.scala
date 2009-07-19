@@ -158,7 +158,7 @@ object AttributesSpec extends Specification {
       s("age") = 8
       s("diet.food") = "Meow Mix"
       s("diet.liquid") = "water"
-      val t = s.copy
+      val t = s.copy()
 
       s.toString mustEqual "{: age=\"8\" diet={diet: food=\"Meow Mix\" liquid=\"water\" } name=\"Communist\" }"
       t.toString mustEqual "{: age=\"8\" diet={diet: food=\"Meow Mix\" liquid=\"water\" } name=\"Communist\" }"
@@ -167,6 +167,20 @@ object AttributesSpec extends Specification {
 
       s.toString mustEqual "{: age=\"8\" diet={diet: food=\"fish\" liquid=\"water\" } name=\"Communist\" }"
       t.toString mustEqual "{: age=\"8\" diet={diet: food=\"Meow Mix\" liquid=\"water\" } name=\"Communist\" }"
+    }
+
+    "copy with inheritance" in {
+      val s = new Attributes(null, "s")
+      s("name") = "Communist"
+      s("age") = 1
+      val t = new Attributes(null, "t")
+      t("age") = 8
+      t("disposition") = "hungry"
+      t.inheritFrom(s)
+
+      val x = t.copy()
+      t.toString mustEqual "{t (inherit=s): age=\"8\" disposition=\"hungry\" }"
+      x.toString mustEqual "{t: age=\"8\" disposition=\"hungry\" name=\"Communist\" }"
     }
 
     "find lists" in {

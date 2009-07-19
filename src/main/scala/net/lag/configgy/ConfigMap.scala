@@ -129,7 +129,10 @@ trait ConfigMap {
   def subscribe(subscriber: Subscriber): SubscriptionKey
 
   /**
-   * Make a deep copy of this ConfigMap.
+   * Make a deep copy of this ConfigMap. Any inheritance chains will be
+   * deep-copied, but the inheritance will not be preserved: the copied
+   * ConfigMap stands alone as its own set of objects, reflecting the
+   * frozen state of any inherited ConfigMaps.
    */
   def copy(): ConfigMap
 
@@ -163,7 +166,7 @@ trait ConfigMap {
       case None => None
     }
   }
-  
+
   /**
    * If the requested key is present and can be converted into an int
    * (via `String.toInt`), return that int. Otherwise,
@@ -204,7 +207,7 @@ trait ConfigMap {
       case None => defaultValue
     }
   }
-  
+
   /**
    * If the requested key is present and can be converted into a double
    * (via `String.toDouble`), return that double. Otherwise, return `None`.
@@ -269,7 +272,7 @@ trait ConfigMap {
    * first.
    */
   def setLong(key: String, value: Long): Unit = setString(key, value.toString)
-  
+
   /**
    * Set the given key to a double value, by converting it to a string
    * first.

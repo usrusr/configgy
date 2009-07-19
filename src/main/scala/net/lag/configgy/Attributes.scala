@@ -352,17 +352,21 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   // make a deep copy of the Attributes tree.
   def copy(): Attributes = {
-    val out = new Attributes(config, name)
+    copyTo(new Attributes(config, name))
+  }
+
+  private def copyTo(attr: Attributes): Attributes = {
+    inherit map { _.copyTo(attr) }
     for (val (key, value) <- cells.elements) {
       value match {
-        case StringCell(x) => out(key) = x
-        case StringListCell(x) => out(key) = x
+        case StringCell(x) => attr(key) = x
+        case StringListCell(x) => attr(key) = x
         case AttributesCell(x) =>
-          val attr = x.copy
-          out.cells += (key -> new AttributesCell(attr))
+          val xattr = x.copy()
+          attr.cells += (key -> new AttributesCell(xattr))
       }
     }
-    out
+    attr
   }
 
   def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = {

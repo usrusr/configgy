@@ -16,12 +16,12 @@
 
 package net.lag.logging
 
-import java.io._
-import java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}
-import java.util.{Date, logging => javalog}
-import org.specs._
-import net.lag.configgy.Config
-import net.lag.extensions._
+import _root_.java.io._
+import _root_.java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}
+import _root_.java.util.{Date, logging => javalog}
+import _root_.org.specs._
+import _root_.net.lag.configgy.Config
+import _root_.net.lag.extensions._
 
 
 object Crazy {

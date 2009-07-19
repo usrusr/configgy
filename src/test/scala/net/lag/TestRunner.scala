@@ -16,8 +16,8 @@
 
 package net.lag
 
-import java.io.File
-import org.specs.runner.SpecsFileRunner
+import _root_.java.io.File
+import _root_.org.specs.runner.SpecsFileRunner
 
 
 object TestRunner extends SpecsFileRunner("src/test/scala/**/*.scala", ".*",

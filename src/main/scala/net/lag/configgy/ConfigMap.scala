@@ -244,7 +244,9 @@ trait ConfigMap {
    */
   def getBool(key: String): Option[Boolean] = {
     getString(key) match {
-      case Some(x) => Some(x.equals(TRUE))
+      case Some(x) =>
+        if (x != TRUE && x != FALSE) throw new ConfigException("invalid boolean value")
+        Some(x.equals(TRUE))
       case None => None
     }
   }

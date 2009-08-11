@@ -108,6 +108,13 @@ object ConfigParserSpec extends Specification {
       a.getList("daemon.useLess").toList mustEqual List("one", "two")
     }
 
+    "handle lists with numbers" in {
+      val data = "ports = [ 9940, 9941, 9942 ]\n"
+      val a = parse(data)
+      a.toString mustEqual "{: ports=[9940,9941,9942] }"
+      a.getList("ports").toList mustEqual List("9940", "9941", "9942")
+    }
+
     "import files" in {
       val data1 =
         "toplevel=\"skeletor\"\n" +

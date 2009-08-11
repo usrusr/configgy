@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import org.specs._
+import net.lag.extensions._
 
 
 object ConfigParserSpec extends Specification {
@@ -187,6 +188,37 @@ object ConfigParserSpec extends Specification {
 
     "interpolate environment vars" in {
       parse("user=\"$(USER)\"").toString must beDifferent("{: user=\"$(USER)\" }")
+    }
+
+    "interpolate properties" in {
+      val value = System.getProperty("java.home")
+      parse("java_home=\"$(java.home)\"").toString mustEqual("{: java_home=\"" + value.quoteC + "\" }")
+    }
+
+    "properties have precedence over environment" in {
+      // find an environment variable that exists
+      val iter = System.getenv.entrySet.iterator
+      iter.hasNext mustEqual(true)
+      val entry = iter.next
+      val key = entry.getKey
+      val value1 = entry.getValue
+      val value2 = value1 + "-test"
+
+      val orig_prop = System.getProperty(key)
+      System.clearProperty(key)
+
+      try {
+        parse("v=\"$(" + key + ")\"").toString mustEqual("{: v=\"" + value1.quoteC + "\" }")
+        System.setProperty(key, value2)
+        parse("v=\"$(" + key + ")\"").toString mustEqual("{: v=\"" + value2.quoteC + "\" }")
+      } finally {
+        if (orig_prop eq null)
+          System.clearProperty(key)
+        else
+          System.setProperty(key, orig_prop)
+      }
+
+      parse("v=\"$(" + key + ")\"").toString mustEqual("{: v=\"" + value1.quoteC + "\" }")
     }
   }
 

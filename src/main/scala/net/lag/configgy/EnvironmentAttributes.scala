@@ -34,7 +34,24 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   private val env = new mutable.HashMap[String, String]
   env ++= new JavaMap(System.getenv()).elements
 
-  def getString(key: String): Option[String] = env.get(key)
+  // deal with java.util.Properties extending
+  // java.util.Hashtable[Object, Object] and not
+  // java.util.Hashtable[String, String]
+  private def getSystemProperties(): mutable.HashMap[String,String] =
+  {
+    val map = new mutable.HashMap[String, String]
+    for (entry <- new jcl.Hashtable(System.getProperties()).elements) {
+      entry match {
+        case (k: String, v: String) => map.put(k, v)
+        case _ =>
+      }
+    }
+    map
+  }
+
+  def getString(key: String): Option[String] = {
+    getSystemProperties().get(key).orElse(env.get(key))
+  }
 
   def getConfigMap(key: String): Option[ConfigMap] = None
   def configMap(key: String): ConfigMap = error("not implemented")
@@ -47,9 +64,14 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   def setString(key: String, value: String): Unit = error("read-only attributes")
   def setList(key: String, value: Seq[String]): Unit = error("read-only attributes")
   def setConfigMap(key: String, value: ConfigMap): Unit = error("read-only attributes")
-  def contains(key: String): Boolean = env.contains(key)
+  def contains(key: String): Boolean = {
+    env.contains(key) || getSystemProperties().contains(key)
+  }
   def remove(key: String): Boolean = error("read-only attributes")
-  def keys: Iterator[String] = env.keys
+  def keys: Iterator[String] = {
+    val set = getSystemProperties().keySet ++ env.keySet
+    set.elements
+  }
   def asMap(): Map[String, String] = error("not implemented")
   def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
   def copy(): ConfigMap = this

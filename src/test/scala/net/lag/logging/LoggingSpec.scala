@@ -182,6 +182,13 @@ object LoggingSpec extends Specification with TestHelper {
              "ERR [20080328-22:53:16.722] logging: Help!")
     }
 
+    "use a crazy formatter" in {
+      handler.setFormatter(new GenericFormatter("%2$s <HH:mm> %1$.4s "))
+      val log = Logger.get("net.lag.logging.Skeletor")
+      log.error("Help!")
+      eat(handler.toString) mustEqual List("logging 22:53 ERRO Help!")
+    }
+
     "truncate lines" in {
       handler.truncateAt = 30
       val log1 = Logger.get("net.lag.whiskey.Train")
@@ -357,6 +364,7 @@ object LoggingSpec extends Specification with TestHelper {
           "level=\"debug\"\n" +
           "truncate=1024\n" +
           "use_full_package_names = true\n" +
+          "prefix_format=\"%s <HH:mm> %s\"\n" +
           "append off\n"
 
         val c = new Config
@@ -365,12 +373,13 @@ object LoggingSpec extends Specification with TestHelper {
 
         log.getLevel mustEqual Level.DEBUG
         log.getHandlers.length mustEqual 1
-        val h = log.getHandlers()(0).asInstanceOf[Handler]
-        h.asInstanceOf[FileHandler].filename mustEqual folderName + "/test.log"
-        h.asInstanceOf[FileHandler].append mustEqual false
+        val handler = log.getHandlers()(0).asInstanceOf[FileHandler]
+        handler.filename mustEqual folderName + "/test.log"
+        handler.append mustEqual false
+        handler.formatter.formatPrefix(javalog.Level.WARNING, "10:55", "hello") mustEqual "WARNING 10:55 hello"
         log.name mustEqual "net.lag"
-        h.truncateAt mustEqual 1024
-        h.formatter.useFullPackageNames mustEqual true
+        handler.truncateAt mustEqual 1024
+        handler.formatter.useFullPackageNames mustEqual true
       }
 
       withTempFolder {

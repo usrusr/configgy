@@ -338,7 +338,7 @@ object Logger {
     val allowed = List("node", "console", "filename", "roll", "utc",
                        "truncate", "truncate_stack_traces", "level",
                        "use_parents", "syslog_host", "syslog_server_name",
-                       "syslog_use_iso_date_format",
+                       "syslog_use_iso_date_format", "prefix_format",
                        "use_full_package_names", "append")
     var forbidden = config.keys.filter(x => !(allowed contains x)).toList
     if (allowNestedBlocks) {
@@ -355,10 +355,15 @@ object Logger {
       }
     }
 
+    val formatter = config.getString("prefix_format") match {
+      case None => new FileFormatter
+      case Some(format) => new GenericFormatter(format)
+    }
+
     var handlers: List[Handler] = Nil
 
     if (config.getBool("console", false)) {
-      handlers = new ConsoleHandler(new FileFormatter) :: handlers
+      handlers = new ConsoleHandler(formatter) :: handlers
     }
 
     for (val hostname <- config.getString("syslog_host")) {
@@ -386,7 +391,7 @@ object Logger {
         case "saturday" => Weekly(Calendar.SATURDAY)
         case x => throw new LoggingException("Unknown logfile rolling policy: " + x)
       }
-      val fh = new FileHandler(filename, policy, new FileFormatter, config.getBool("append", true))
+      val fh = new FileHandler(filename, policy, formatter, config.getBool("append", true))
       handlers = fh :: handlers
     }
 

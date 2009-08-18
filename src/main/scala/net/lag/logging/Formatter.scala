@@ -18,6 +18,7 @@ package net.lag.logging
 
 import java.text.SimpleDateFormat
 import java.util.{Date, GregorianCalendar, TimeZone, logging => javalog}
+import java.util.regex.Pattern
 import scala.collection.mutable
 import net.lag.extensions._
 
@@ -180,35 +181,57 @@ abstract class Formatter extends javalog.Formatter {
 
 
 /**
- * The standard log formatter for a logfile. Log entries are written in this format:
+ * A log formatter that takes a format string containing a date formatter and
+ * positions for the level name and logger name, and uses that to generate the
+ * log line prefix.
  *
- * <pre>
- *     ERR [20080315-18:39:05.033] julius: et tu, brute?
- * </pre>
+ * The date format should be between `<` angle brackets `>` and be a string
+ * that can be passed to java's `SimpleDateFormat`. The rest of the format
+ * string will have java's C-like `format()` called on it, with the level name
+ * as the first positional parameter, and the logger name as the second.
  *
- * which indicates the level (error), the date/time, the logger's name
- * (julius), and the message. The logger's name is usually also the
- * last significant segment of the package name (ie "com.lag.julius"),
- * although packages can override this.
+ * For example, a format string of:
+ *
+ *     "%.3s [<yyyyMMdd-HH:mm:ss.SSS>] %s: "
+ *
+ * will generate a log line prefix of:
+ *
+ *     "ERR [20080315-18:39:05.033] julius: "
  */
-class FileFormatter extends Formatter {
-  private val DATE_FORMAT = new SimpleDateFormat("yyyyMMdd-HH:mm:ss.SSS")
+class GenericFormatter(format: String) extends Formatter {
+  private val dateFormatRegex = Pattern.compile("<([^>]+)>")
+  private val matcher = dateFormatRegex.matcher(format)
+
+  private val DATE_FORMAT = new SimpleDateFormat(if (matcher.find()) matcher.group(1) else "yyyyMMdd-HH:mm:ss.SSS")
+  private val FORMAT = matcher.replaceFirst("%3\\$s")
 
   override def dateFormat = DATE_FORMAT
   override def lineTerminator = "\n"
 
   override def formatPrefix(level: javalog.Level, date: String, name: String): String = {
     val levelName = level match {
-      case Level(name, _) => name.substring(0, 3)
-      case x: javalog.Level => {
-        // if it maps to one of our levels, use our name.
+      // if it maps to one of our levels, use our name.
+      case Level(name, _) => name
+      case x: javalog.Level =>
         Logger.levelsMap.get(x.intValue) match {
           case None => "%03d".format(x.intValue)
-          case Some(level) => level.name.substring(0, 3)
+          case Some(level) => level.name
         }
-      }
     }
 
-    "%s [%s] %s: ".format(levelName, date, name)
+    FORMAT.format(levelName, name, date)
   }
 }
+
+
+/**
+ * The standard log formatter for a logfile. Log entries are written in this format:
+ *
+ *     ERR [20080315-18:39:05.033] julius: et tu, brute?
+ *
+ * which indicates the level (error), the date/time, the logger's name
+ * (julius), and the message. The logger's name is usually also the
+ * last significant segment of the package name (ie "com.lag.julius"),
+ * although packages can override this.
+ */
+class FileFormatter extends GenericFormatter("%.3s [<yyyyMMdd-HH:mm:ss.SSS>] %s: ")

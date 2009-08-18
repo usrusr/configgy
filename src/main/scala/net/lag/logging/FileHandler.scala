@@ -94,9 +94,9 @@ class FileHandler(val filename: String, val policy: Policy, formatter: Formatter
         next.add(Calendar.DAY_OF_MONTH, 1)
       case Weekly(weekday) =>
         next.set(Calendar.HOUR_OF_DAY, 0)
-        while (next.get(Calendar.DAY_OF_WEEK) != weekday) {
-            next.add(Calendar.DAY_OF_MONTH, 1)
-        }
+        do {
+          next.add(Calendar.DAY_OF_MONTH, 1)
+        } while (next.get(Calendar.DAY_OF_WEEK) != weekday)
     }
     next.getTimeInMillis
   }

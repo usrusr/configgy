@@ -18,7 +18,7 @@ package net.lag.logging
 
 import _root_.java.io._
 import _root_.java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}
-import _root_.java.util.{Date, logging => javalog}
+import _root_.java.util.{Calendar, Date, logging => javalog}
 import _root_.org.specs._
 import _root_.net.lag.configgy.Config
 import _root_.net.lag.extensions._
@@ -268,11 +268,24 @@ object LoggingSpec extends Specification with TestHelper {
 
 
     "roll logs on time" in {
-      withTempFolder {
-        val rollHandler = new FileHandler(folderName + "/test.log", Hourly, new FileFormatter, true)
-        rollHandler.computeNextRollTime(1206769996722L) mustEqual 1206770400000L
-        rollHandler.computeNextRollTime(1206770400000L) mustEqual 1206774000000L
-        rollHandler.computeNextRollTime(1206774000001L) mustEqual 1206777600000L
+      "hourly" in {
+        withTempFolder {
+          val rollHandler = new FileHandler(folderName + "/test.log", Hourly, new FileFormatter, true)
+          rollHandler.computeNextRollTime(1206769996722L) mustEqual 1206770400000L
+          rollHandler.computeNextRollTime(1206770400000L) mustEqual 1206774000000L
+          rollHandler.computeNextRollTime(1206774000001L) mustEqual 1206777600000L
+        }
+      }
+
+      "weekly" in {
+        withTempFolder {
+          val rollHandler = new FileHandler(folderName + "/test.log", Weekly(Calendar.SUNDAY), new FileFormatter, true)
+          rollHandler.computeNextRollTime(1250354734000L) mustEqual 1250406000000L
+          rollHandler.computeNextRollTime(1250404734000L) mustEqual 1250406000000L
+          rollHandler.computeNextRollTime(1250406001000L) mustEqual 1251010800000L
+          rollHandler.computeNextRollTime(1250486000000L) mustEqual 1251010800000L
+          rollHandler.computeNextRollTime(1250496000000L) mustEqual 1251010800000L
+        }
       }
     }
 

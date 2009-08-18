@@ -18,7 +18,7 @@ package net.lag.logging
 
 import _root_.java.io._
 import _root_.java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}
-import _root_.java.util.{Calendar, Date, logging => javalog}
+import _root_.java.util.{Calendar, Date, TimeZone, logging => javalog}
 import _root_.org.specs._
 import _root_.net.lag.configgy.Config
 import _root_.net.lag.extensions._
@@ -279,7 +279,9 @@ object LoggingSpec extends Specification with TestHelper {
 
       "weekly" in {
         withTempFolder {
-          val rollHandler = new FileHandler(folderName + "/test.log", Weekly(Calendar.SUNDAY), new FileFormatter, true)
+          val formatter = new FileFormatter
+          formatter.calendar.setTimeZone(TimeZone.getTimeZone("GMT-7:00"))
+          val rollHandler = new FileHandler(folderName + "/test.log", Weekly(Calendar.SUNDAY), formatter, true)
           rollHandler.computeNextRollTime(1250354734000L) mustEqual 1250406000000L
           rollHandler.computeNextRollTime(1250404734000L) mustEqual 1250406000000L
           rollHandler.computeNextRollTime(1250406001000L) mustEqual 1251010800000L

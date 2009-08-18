@@ -138,21 +138,21 @@ as if they were in C structs, using dotted-name notation. So the above config is
 Logging is configured in a special `<log>` block. The main logging options
 are described below.
 
-- **`filename`** -
+- `filename` -
   the file to write log entries into (optional)
-- **`level`** -
+- `level` -
   the lowest severity log entry that should be written to the
   logfile (defaults to `INFO`) (described below)
-- **`console`** -
+- `console` -
   `true` (`on`) if logs should be written to the stderr
   console
-- **`syslog_host`** -
+- `syslog_host` -
   hostname (or `hostname:port`) to send syslog formatted
   log data to (optional)
-- **`syslog_server_name`** -
+- `syslog_server_name` -
   server name to attach to log messages when
   sending to a syslog (optional)
-- **`roll`** -
+- `roll` -
   when the logfile should be rolled (described below)
 
 Logging severities are:
@@ -254,23 +254,25 @@ The pingd block will use its own value of "timeout" (30), but will inherit
 
 There are a handful of options to tune logging more directly:
 
-- **`utc`** -
+- `utc` -
   `on` to log in UTC (previously known as GMT) time instead of local
   time (default: off)
-- **`truncate`** -
+- `truncate` -
   number of characters to allow in a single log line before eliding with
   "..." (default: 0 = never truncate)
-- **`truncate_stack_traces`** -
+- `truncate_stack_traces` -
   number of lines of a stack trace to show before eliding (default: 30)
-- **`syslog_use_iso_date_format`** -
+- `syslog_use_iso_date_format` -
   set `off` to use old-style BSD date format in syslog messages
   (default: on)
-- **`use_full_package_names`** -
+- `use_full_package_names` -
   set `on` to use full package names in log lines ("net.lag.configgy")
   instead of the toplevel node ("configgy") (default: off)
-- **`append`** -
+- `append` -
   set `off` to create a new logfile each time the app starts (default:
   on, meaning to append to any existing logfile)
+- `prefix_format`
+  customize the format of log line prefixes (see below)
 
 The logging options are usually set on the root node of java's "logging tree",
 at "". You can set options or logging handlers at other nodes by putting them
@@ -297,11 +299,23 @@ logfiles.
 
 The extra options you can use in these inner blocks are:
 
-- **`node`** -
+- `node` -
   define the log node name (as a string)
-- **`use_parents`** -
+- `use_parents` -
   whether to fall back to parent log-node configuration (java's 
   `setUseParentHandlers`) (default: on)
+
+A custom log line prefix format can be set with `prefix_format`. The date
+format should be between `<` angle brackets `>` in the form used by java's
+`SimpleDateFormat` and the rest of the string is passed through java's
+`String.format()`, with the log level as the first parameter and the logger
+name as the second. For example, a format string of:
+
+    %.3s [<yyyyMMdd-HH:mm:ss.SSS>] %s:
+
+will generate a log line prefix of:
+
+    ERR [20080315-18:39:05.033] julius:
 
 
 ## Usage from within scala

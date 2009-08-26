@@ -129,7 +129,7 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
    * Log a message, with lazy (call-by-name) computation of the message,
    * at the desired level.
    */
-  def logLazy(level: Level, message: => AnyRef): Unit = logLazy(level, null.asInstanceOf[Throwable], message)
+  def logLazy(level: Level, message: => AnyRef): Unit = logLazy(level, null: Throwable, message)
 
   /**
    * Log a message, with lazy (call-by-name) computation of the message,
@@ -284,7 +284,7 @@ object Logger {
     }
   }
 
-  /** An alias for <code>get(name)</code> */
+  /** An alias for `get(name)` */
   def apply(name: String) = get(name)
 
   /**
@@ -302,7 +302,7 @@ object Logger {
     }
   }
 
-  /** An alias for <code>get()</code> */
+  /** An alias for `get()` */
   def apply() = get
 
   /**

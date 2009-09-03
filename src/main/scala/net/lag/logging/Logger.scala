@@ -339,7 +339,7 @@ object Logger {
                        "truncate", "truncate_stack_traces", "level",
                        "use_parents", "syslog_host", "syslog_server_name",
                        "syslog_use_iso_date_format", "prefix_format",
-                       "use_full_package_names", "append")
+                       "use_full_package_names", "append", "scribe_server")
     var forbidden = config.keys.filter(x => !(allowed contains x)).toList
     if (allowNestedBlocks) {
       forbidden = forbidden.filter(x => !config.getConfigMap(x).isDefined)
@@ -395,17 +395,22 @@ object Logger {
       handlers = fh :: handlers
     }
 
+    for (scribeServer <- config.getString("scribe_server")) {
+      val sh = new ScribeHandler(formatter)
+      sh.server = scribeServer
+      handlers = sh :: handlers
+    }
+
     /* if they didn't specify a level, use "null", which is a secret
      * signal to javalog to use the parent logger's level. this is the
      * usual desired behavior, but not really documented anywhere. sigh.
      */
     val level = config.getString("level") match {
-      case Some(levelName) => {
+      case Some(levelName) =>
         levelNamesMap.get(levelName.toUpperCase) match {
           case Some(x) => x
           case None => throw new LoggingException("Unknown log level: " + levelName)
         }
-      }
       case None => null
     }
 

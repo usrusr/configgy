@@ -36,7 +36,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   var bufferTimeMilliseconds = 100
   var lastTransmission: Long = 0
 
-  // var don't connect more frequently than this (when the scribe server is down):
+  // don't connect more frequently than this (when the scribe server is down):
   val connectBackoffMilliseconds = 15000
   var lastConnectAttempt: Long = 0
 
@@ -122,7 +122,9 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
           throw new IOException("Error response from scribe server: " + response.toList.toString)
         }
         queue.trimStart(count)
-        lastTransmission = System.currentTimeMillis
+        if (queue.isEmpty) {
+          lastTransmission = System.currentTimeMillis
+        }
       } catch {
         case e: Exception =>
           log.error(e, "Failed to send %d log entries to scribe server at %s", count, server)

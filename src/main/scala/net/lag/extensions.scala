@@ -23,17 +23,17 @@ final class ConfiggyString(wrapped: String) {
   /**
    * For every section of a string that matches a regular expression, call
    * a function to determine a replacement (as in python's
-   * <code>re.sub</code>). The function will be passed the Matcher object
+   * `re.sub`). The function will be passed the Matcher object
    * corresponding to the substring that matches the pattern, and that
    * substring will be replaced by the function's result.
    *
-   * <p> For example, this call:
+   * For example, this call:
    *
-   * <p><code> "ohio".regexSub("""h.""".r) { m => "n" } </code>
+   *     "ohio".regexSub("""h.""".r) { m => "n" }
    *
-   * <p> will return the string <code>"ono"</code>.
+   * will return the string `"ono"`.
    *
-   * <p> The matches are found using <code>Matcher.find()</code> and so
+   * The matches are found using `Matcher.find()` and so
    * will obey all the normal java rules (the matches will not overlap,
    * etc).
    *

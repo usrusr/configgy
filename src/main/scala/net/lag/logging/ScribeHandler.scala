@@ -37,7 +37,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   var lastTransmission: Long = 0
 
   // don't connect more frequently than this (when the scribe server is down):
-  val connectBackoffMilliseconds = 15000
+  var connectBackoffMilliseconds = 15000
   var lastConnectAttempt: Long = 0
 
   var maxMessagesPerTransaction = 1000
@@ -79,31 +79,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
       val outStream = s.getOutputStream()
       val inStream = s.getInputStream()
       val count = maxMessagesPerTransaction min queue.size
-      val texts = for (i <- 0 until count) yield queue(i).getBytes("UTF-8")
-
-      val recordHeader = ByteBuffer.wrap(new Array[Byte](10 + category.length))
-      recordHeader.order(ByteOrder.BIG_ENDIAN)
-      recordHeader.put(11: Byte)
-      recordHeader.putShort(1)
-      recordHeader.putInt(category.length)
-      recordHeader.put(category.getBytes("ISO-8859-1"))
-      recordHeader.put(11: Byte)
-      recordHeader.putShort(2)
-
-      val messageSize = (count * (recordHeader.capacity + 5)) + texts.foldLeft(0) { _ + _.length } + SCRIBE_PREFIX.length + 5
-      val buffer = ByteBuffer.wrap(new Array[Byte](messageSize + 4))
-      buffer.order(ByteOrder.BIG_ENDIAN)
-      // "framing":
-      buffer.putInt(messageSize)
-      buffer.put(SCRIBE_PREFIX)
-      buffer.putInt(count)
-      for (text <- texts) {
-        buffer.put(recordHeader.array)
-        buffer.putInt(text.length)
-        buffer.put(text)
-        buffer.put(0: Byte)
-      }
-      buffer.put(0: Byte)
+      val buffer = makeBuffer(count)
 
       try {
         outStream.write(buffer.array)
@@ -130,6 +106,35 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
           log.error(e, "Failed to send %d log entries to scribe server at %s", count, server)
       }
     }
+  }
+
+  def makeBuffer(count: Int): ByteBuffer = {
+    val texts = for (i <- 0 until count) yield queue(i).getBytes("UTF-8")
+
+    val recordHeader = ByteBuffer.wrap(new Array[Byte](10 + category.length))
+    recordHeader.order(ByteOrder.BIG_ENDIAN)
+    recordHeader.put(11: Byte)
+    recordHeader.putShort(1)
+    recordHeader.putInt(category.length)
+    recordHeader.put(category.getBytes("ISO-8859-1"))
+    recordHeader.put(11: Byte)
+    recordHeader.putShort(2)
+
+    val messageSize = (count * (recordHeader.capacity + 5)) + texts.foldLeft(0) { _ + _.length } + SCRIBE_PREFIX.length + 5
+    val buffer = ByteBuffer.wrap(new Array[Byte](messageSize + 4))
+    buffer.order(ByteOrder.BIG_ENDIAN)
+    // "framing":
+    buffer.putInt(messageSize)
+    buffer.put(SCRIBE_PREFIX)
+    buffer.putInt(count)
+    for (text <- texts) {
+      buffer.put(recordHeader.array)
+      buffer.putInt(text.length)
+      buffer.put(text)
+      buffer.put(0: Byte)
+    }
+    buffer.put(0: Byte)
+    buffer
   }
 
   def close(): Unit = synchronized {

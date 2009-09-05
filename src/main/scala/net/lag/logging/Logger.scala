@@ -398,6 +398,9 @@ object Logger {
     for (scribeServer <- config.getString("scribe_server")) {
       val sh = new ScribeHandler(formatter)
       sh.server = scribeServer
+      config.getInt("scribe_buffer_msec").map { sh.bufferTimeMilliseconds = _ }
+      config.getInt("scribe_backoff_msec").map { sh.connectBackoffMilliseconds = _ }
+      config.getInt("scribe_max_packet_size").map { sh.maxMessagesPerTransaction = _ }
       handlers = sh :: handlers
     }
 

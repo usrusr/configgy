@@ -339,7 +339,9 @@ object Logger {
                        "truncate", "truncate_stack_traces", "level",
                        "use_parents", "syslog_host", "syslog_server_name",
                        "syslog_use_iso_date_format", "prefix_format",
-                       "use_full_package_names", "append", "scribe_server")
+                       "use_full_package_names", "append", "scribe_server",
+                       "scribe_buffer_msec", "scribe_backoff_msec",
+                       "scribe_max_packet_size")
     var forbidden = config.keys.filter(x => !(allowed contains x)).toList
     if (allowNestedBlocks) {
       forbidden = forbidden.filter(x => !config.getConfigMap(x).isDefined)

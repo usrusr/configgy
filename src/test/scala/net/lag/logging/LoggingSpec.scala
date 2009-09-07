@@ -425,5 +425,22 @@ object LoggingSpec extends Specification with TestHelper {
         "73740b00020000003c494e46205b32303038303332382d32323a35333a31362e3732325d2068656c6c6f3a2" +
         "05468697320697320616e6f74686572206d6573736167652e0a0000"
     }
+
+    "configure a scribe server" in {
+      val TEST_DATA =
+        "scribe_server = \"fake:8080\"\n" +
+        "scribe_buffer_msec = 333\n" +
+        "scribe_backoff_msec = 501\n" +
+        "scribe_max_packet_size = 66\n"
+      val c = new Config
+      c.load(TEST_DATA)
+      val log = Logger.configure(c, false, false)
+      val handler = log.getHandlers()(0).asInstanceOf[ScribeHandler]
+
+      handler.server mustEqual "fake:8080"
+      handler.bufferTimeMilliseconds mustEqual 333
+      handler.connectBackoffMilliseconds mustEqual 501
+      handler.maxMessagesPerTransaction mustEqual 66
+    }
   }
 }

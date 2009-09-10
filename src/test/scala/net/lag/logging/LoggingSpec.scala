@@ -390,7 +390,7 @@ object LoggingSpec extends Specification with TestHelper {
 
         val c = new Config
         c.load(TEST_DATA)
-        val log = Logger.configure(c, false, false)
+        val log = Logger.configure(c, false, true)
 
         log.getHandlers.length mustEqual 1
         val h = log.getHandlers()(0)
@@ -434,7 +434,7 @@ object LoggingSpec extends Specification with TestHelper {
         "scribe_max_packet_size = 66\n"
       val c = new Config
       c.load(TEST_DATA)
-      val log = Logger.configure(c, false, false)
+      val log = Logger.configure(c, false, true)
       val handler = log.getHandlers()(0).asInstanceOf[ScribeHandler]
 
       handler.server mustEqual "fake:8080"

@@ -351,7 +351,7 @@ object Logger {
     }
 
     val logger = Logger.get(config.getString("node", ""))
-    if (! validateOnly) {
+    if (!validateOnly && allowNestedBlocks) {
       for (val handler <- logger.getHandlers) {
         logger.removeHandler(handler)
       }

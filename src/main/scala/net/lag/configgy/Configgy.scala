@@ -91,7 +91,7 @@ object Configgy {
     _config = Config.fromResource(name)
     configLogging
   }
-  
+
   /**
    * Configure the server by loading a config file from the given named
    * resource inside this jar file, using a specific class loader.
@@ -102,7 +102,7 @@ object Configgy {
     _config = Config.fromResource(name, classLoader)
     configLogging
   }
-  
+
   private def configLogging = {
     val log = Logger.get("")
 

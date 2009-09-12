@@ -23,6 +23,8 @@ import _root_.java.util.{Arrays, logging => javalog}
 import _root_.scala.collection.mutable
 
 
+private class Retry extends Exception("retry")
+
 object ScribeHandler {
   val OK = 0
   val TRY_LATER = 1
@@ -49,6 +51,8 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   var socket: Option[Socket] = None
   val queue = new mutable.ArrayBuffer[String]
 
+  var archaicServer = false
+
   def server_=(server: String) {
     val parts = server.split(":", 2)
     if (parts.length == 2) {
@@ -73,7 +77,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
     }
   }
 
-  def flush() = synchronized {
+  def flush(): Unit = synchronized {
     connect()
     for (s <- socket) {
       val outStream = s.getOutputStream()
@@ -83,9 +87,10 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
 
       try {
         outStream.write(buffer.array)
+        val expectedReply = if (archaicServer) OLD_SCRIBE_REPLY else SCRIBE_REPLY
 
         // read response:
-        val response = new Array[Byte](SCRIBE_REPLY.length)
+        val response = new Array[Byte](expectedReply.length)
         var offset = 0
         while (offset < response.length) {
           val n = inStream.read(response, offset, response.length - offset)
@@ -93,8 +98,15 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
             throw new IOException("End of stream")
           }
           offset += n
+          if (!archaicServer && (offset > 0) && (response(0) == 0)) {
+            archaicServer = true
+            close()
+            lastConnectAttempt = 0
+            log.error("Scribe server is archaic; retrying with old protocol.")
+            throw new Retry
+          }
         }
-        if (!Arrays.equals(response, SCRIBE_REPLY)) {
+        if (!Arrays.equals(response, expectedReply)) {
           throw new IOException("Error response from scribe server: " + response.toList.toString)
         }
         queue.trimStart(count)
@@ -102,6 +114,8 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
           lastTransmission = System.currentTimeMillis
         }
       } catch {
+        case _: Retry =>
+          flush()
         case e: Exception =>
           log.error(e, "Failed to send %d log entries to scribe server at %s", count, server)
       }
@@ -120,12 +134,13 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
     recordHeader.put(11: Byte)
     recordHeader.putShort(2)
 
-    val messageSize = (count * (recordHeader.capacity + 5)) + texts.foldLeft(0) { _ + _.length } + SCRIBE_PREFIX.length + 5
+    val prefix = if (archaicServer) OLD_SCRIBE_PREFIX else SCRIBE_PREFIX
+    val messageSize = (count * (recordHeader.capacity + 5)) + texts.foldLeft(0) { _ + _.length } + prefix.length + 5
     val buffer = ByteBuffer.wrap(new Array[Byte](messageSize + 4))
     buffer.order(ByteOrder.BIG_ENDIAN)
     // "framing":
     buffer.putInt(messageSize)
-    buffer.put(SCRIBE_PREFIX)
+    buffer.put(prefix)
     buffer.putInt(count)
     for (text <- texts) {
       buffer.put(recordHeader.array)
@@ -145,6 +160,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
         case _ =>
       }
     }
+    socket = None
   }
 
   def publish(record: javalog.LogRecord): Unit = synchronized {
@@ -168,10 +184,23 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
     // list of structs
     15, 0, 1, 12
   )
+  val OLD_SCRIBE_PREFIX: Array[Byte] = Array(
+    // (no version), "Log", reply, reqid=0
+    0, 0, 0, 3, 'L'.toByte, 'o'.toByte, 'g'.toByte, 1, 0, 0, 0, 0,
+    // list of structs
+    15, 0, 1, 12
+  )
 
   val SCRIBE_REPLY: Array[Byte] = Array(
     // version 1, reply, "Log", reqid=0
     0x80.toByte, 1, 0, 2, 0, 0, 0, 3, 'L'.toByte, 'o'.toByte, 'g'.toByte, 0, 0, 0, 0,
+    // int, fid 0, 0=ok
+    8, 0, 0, 0, 0, 0, 0, 0
+  )
+  val OLD_SCRIBE_REPLY: Array[Byte] = Array(
+    0, 0, 0, 20,
+    // (no version), "Log", reply, reqid=0
+    0, 0, 0, 3, 'L'.toByte, 'o'.toByte, 'g'.toByte, 2, 0, 0, 0, 0,
     // int, fid 0, 0=ok
     8, 0, 0, 0, 0, 0, 0, 0
   )

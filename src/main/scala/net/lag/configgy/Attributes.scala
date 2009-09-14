@@ -36,7 +36,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   private val cells = new mutable.HashMap[String, Cell]
   private var monitored = false
-  private var inherit: Option[Attributes] = None
+  var inheritFrom: Option[ConfigMap] = None
 
 
   def keys: Iterator[String] = cells.keys
@@ -44,11 +44,10 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   override def toString() = {
     val buffer = new StringBuilder("{")
     buffer ++= name
-    if (inherit.isDefined) {
-      buffer ++= " (inherit="
-      buffer ++= inherit.get.name
-      buffer ++= ")"
-    }
+    buffer ++= (inheritFrom match {
+      case Some(a: Attributes) => " (inherit=" + a.name + ")"
+      case None => ""
+    })
     buffer ++= ": "
     for (val key <- sortedKeys) {
       buffer ++= key
@@ -86,18 +85,18 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     if (elems.length > 1) {
       cells.get(elems(0).toLowerCase) match {
         case Some(AttributesCell(x)) => x.lookupCell(elems(1).toLowerCase)
-        case None => inherit match {
-          case Some(a) => a.lookupCell(key)
-          case None => None
+        case None => inheritFrom match {
+          case Some(a: Attributes) => a.lookupCell(key)
+          case _ => None
         }
         case _ => None
       }
     } else {
       cells.get(elems(0).toLowerCase) match {
         case x @ Some(_) => x
-        case None => inherit match {
-          case Some(a) => a.lookupCell(key)
-          case None => None
+        case None => inheritFrom match {
+          case Some(a: Attributes) => a.lookupCell(key)
+          case _ => None
         }
       }
     }
@@ -346,17 +345,16 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   protected[configgy] def isMonitored = monitored
 
-  protected[configgy] def inheritFrom(attr: Attributes) = {
-    inherit = Some(attr)
-  }
-
   // make a deep copy of the Attributes tree.
   def copy(): Attributes = {
     copyTo(new Attributes(config, name))
   }
 
   private def copyTo(attr: Attributes): Attributes = {
-    inherit map { _.copyTo(attr) }
+    inheritFrom match {
+      case Some(a: Attributes) => a.copyTo(attr)
+      case _ =>
+    }
     for (val (key, value) <- cells.elements) {
       value match {
         case StringCell(x) => attr(key) = x

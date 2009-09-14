@@ -84,7 +84,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
     prefix = sections.mkString("", ".", ".")
     val newBlock = attr.makeAttributes(sections.mkString("."))
     for ((k, v) <- attrList) k match {
-      case "inherit" => newBlock.inheritFrom(if (parent.getConfigMap(v).isDefined) parent.makeAttributes(v) else attr.makeAttributes(v))
+      case "inherit" => newBlock.inheritFrom = Some(if (parent.getConfigMap(v).isDefined) parent.makeAttributes(v) else attr.makeAttributes(v))
       case _ => throw new ParseException("Unknown block modifier")
     }
   }

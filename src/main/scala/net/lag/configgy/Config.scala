@@ -308,6 +308,8 @@ class Config extends ConfigMap {
   def keys: Iterator[String] = root.keys
   def asMap(): Map[String, String] = root.asMap()
   def copy(): ConfigMap = root.copy()
+  def inheritFrom = root.inheritFrom
+  def inheritFrom_=(config: Option[ConfigMap]) = root.inheritFrom=(config)
 }
 
 

@@ -176,7 +176,7 @@ object AttributesSpec extends Specification {
       val t = new Attributes(null, "t")
       t("age") = 8
       t("disposition") = "hungry"
-      t.inheritFrom(s)
+      t.inheritFrom = Some(s)
 
       val x = t.copy()
       t.toString mustEqual "{t (inherit=s): age=\"8\" disposition=\"hungry\" }"

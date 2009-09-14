@@ -73,6 +73,8 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   def asMap(): Map[String, String] = error("not implemented")
   def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
   def copy(): ConfigMap = this
+  def inheritFrom: Option[ConfigMap] = None
+  def inheritFrom_=(config: Option[ConfigMap]) = error("not implemented")
 
 
   try {

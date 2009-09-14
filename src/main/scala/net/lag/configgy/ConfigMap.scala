@@ -136,6 +136,18 @@ trait ConfigMap {
    */
   def copy(): ConfigMap
 
+  /**
+   * Make this ConfigMap inherit default values from another ConfigMap.
+   * Any attributes that aren't explicitly set will fall back to the inherited
+   * ConfigMap on lookup.
+   */
+  def inheritFrom_=(config: Option[ConfigMap]): Unit
+
+  /**
+   * Return any ConfigMap that is used as a fall back on lookups.
+   */
+  def inheritFrom: Option[ConfigMap]
+
 
   // -----  convenience methods
 

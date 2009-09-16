@@ -287,14 +287,8 @@ object Logger {
   /** An alias for `get(name)` */
   def apply(name: String) = get(name)
 
-  /**
-   * Return a logger for the class name of the class/object that called
-   * this method. Normally you would use this in a "private val"
-   * declaration on the class/object. The class name is determined
-   * by sniffing around on the stack.
-   */
-  def get: Logger = {
-    val className = new Throwable().getStackTrace()(1).getClassName
+  private def get(depth: Int): Logger = {
+    val className = new Throwable().getStackTrace()(depth).getClassName
     if (className.endsWith("$")) {
       get(className.substring(0, className.length - 1))
     } else {
@@ -302,8 +296,16 @@ object Logger {
     }
   }
 
+  /**
+   * Return a logger for the class name of the class/object that called
+   * this method. Normally you would use this in a "private val"
+   * declaration on the class/object. The class name is determined
+   * by sniffing around on the stack.
+   */
+  def get: Logger = get(2)
+
   /** An alias for `get()` */
-  def apply() = get
+  def apply() = get(2)
 
   /**
    * Iterate the Logger objects that have been created.

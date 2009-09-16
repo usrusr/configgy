@@ -83,21 +83,37 @@ object ConfigParserSpec extends Specification {
     }
 
     "handle string lists" in {
-      val data2 = "cats = [\"Commie\", \"Buttons\", \"Sockington\"]"
-      val b = parse(data2)
-      b.getList("cats").toList mustEqual List("Commie", "Buttons", "Sockington")
-      b.getList("cats")(0) mustEqual "Commie"
+      "normal" in {
+        val data2 = "cats = [\"Commie\", \"Buttons\", \"Sockington\"]"
+        val b = parse(data2)
+        b.getList("cats").toList mustEqual List("Commie", "Buttons", "Sockington")
+        b.getList("cats")(0) mustEqual "Commie"
 
-      val data =
-        "<home>\n" +
-        "    states = [\"California\", \"Tennessee\", \"Idaho\"]\n" +
-        "    regions = [\"pacific\", \"southeast\", \"northwest\"]\n" +
-        "</home>\n"
-      val a = parse(data)
-      a.toString mustEqual "{: home={home: regions=[pacific,southeast,northwest] states=[California,Tennessee,Idaho] } }"
-      a.getList("home.states").toList.mkString(",") mustEqual "California,Tennessee,Idaho"
-      a.getList("home.states")(0) mustEqual "California"
-      a.getList("home.regions")(1) mustEqual "southeast"
+        val data =
+          "<home>\n" +
+          "    states = [\"California\", \"Tennessee\", \"Idaho\"]\n" +
+          "    regions = [\"pacific\", \"southeast\", \"northwest\"]\n" +
+          "</home>\n"
+        val a = parse(data)
+        a.toString mustEqual "{: home={home: regions=[pacific,southeast,northwest] states=[California,Tennessee,Idaho] } }"
+        a.getList("home.states").toList.mkString(",") mustEqual "California,Tennessee,Idaho"
+        a.getList("home.states")(0) mustEqual "California"
+        a.getList("home.regions")(1) mustEqual "southeast"
+      }
+
+      "without comma separators" in {
+        val data2 = "cats = [\"Commie\" \"Buttons\" \"Sockington\"]"
+        val b = parse(data2)
+        b.getList("cats").toList mustEqual List("Commie", "Buttons", "Sockington")
+        b.getList("cats")(0) mustEqual "Commie"
+      }
+
+      "with a trailing comma" in {
+        val data2 = "cats = [\"Commie\", \"Buttons\", \"Sockington\",]"
+        val b = parse(data2)
+        b.getList("cats").toList mustEqual List("Commie", "Buttons", "Sockington")
+        b.getList("cats")(0) mustEqual "Commie"
+      }
     }
 
     "handle camelCase lists" in {

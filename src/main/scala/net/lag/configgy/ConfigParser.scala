@@ -106,7 +106,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
   def value: Parser[Any] = number | string | stringList | trueFalse
   def number = numberToken ^^ { x => if (x.contains('.')) x else x.toInt }
   def string = "\"" ~> stringToken <~ "\"" ^^ { s => attr.interpolate(prefix, s.unquoteC) }
-  def stringList = "[" ~> repsep(string | numberToken, ",") <~ "]" ^^ { list => list.toArray }
+  def stringList = "[" ~> repsep(string | numberToken, opt(",")) <~ (opt(",") ~ "]") ^^ { list => list.toArray }
   def trueFalse: Parser[Boolean] = ("(true|on)".r ^^ { x => true }) | ("(false|off)".r ^^ { x => false })
 
 

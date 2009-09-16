@@ -3,7 +3,7 @@
     module="configgy"
     revision="1.4.2"
     e:testclass="net.lag.TestRunner"
-    e:buildpackage="net/lag/configgy"
+    e:buildpackage="net.lag.configgy"
   />
 
   <configurations>

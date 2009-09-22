@@ -412,19 +412,15 @@ object Logger {
      * signal to javalog to use the parent logger's level. this is the
      * usual desired behavior, but not really documented anywhere. sigh.
      */
-    val level = config.getString("level") match {
-      case Some(levelName) =>
-        levelNamesMap.get(levelName.toUpperCase) match {
-          case Some(x) => x
-          case None => throw new LoggingException("Unknown log level: " + levelName)
-        }
-      case None => null
+    val level = config.getString("level").map { levelName =>
+      levelNamesMap.get(levelName.toUpperCase) match {
+        case Some(x) => x
+        case None => throw new LoggingException("Unknown log level: " + levelName)
+      }
     }
 
     for (val handler <- handlers) {
-      if (level ne null) {
-        handler.setLevel(level)
-      }
+      level.map { handler.setLevel(_) }
       handler.useUtc = config.getBool("utc", false)
       handler.truncateAt = config.getInt("truncate", 0)
       handler.truncateStackTracesAt = config.getInt("truncate_stack_traces", 30)
@@ -436,7 +432,7 @@ object Logger {
 
     if (! validateOnly) {
       logger.setUseParentHandlers(config.getBool("use_parents", true))
-      logger.setLevel(level)
+      level.map { logger.setLevel(_) }
     }
 
     logger

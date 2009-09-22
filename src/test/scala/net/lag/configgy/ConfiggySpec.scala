@@ -148,7 +148,7 @@ object ConfiggySpec extends Specification with TestHelper {
         Logger.get("net.lag.cat.1").info("message three")
         Logger.get("net.lag.cat.1").warning("message four")
 
-        Logger.reset
+        Logger.reset()
         val lines = readLogFile("test.log")
         lines.length mustEqual 3
         lines(0) mustEqual "WAR cat: message two"

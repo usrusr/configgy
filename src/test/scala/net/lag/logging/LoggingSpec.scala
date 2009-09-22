@@ -442,5 +442,25 @@ object LoggingSpec extends Specification with TestHelper {
       handler.connectBackoffMilliseconds mustEqual 501
       handler.maxMessagesPerTransaction mustEqual 66
     }
+
+    "set two handlers on the same logger without resetting the level" in {
+      val TEST_DATA =
+        "filename=\"foobar.log\"\n" +
+        "level=\"debug\"\n" +
+        "scribe {\n" +
+        "  scribe_server = \"fake:8080\"\n" +
+        "  level=\"fatal\"\n" +
+        "}\n"
+      val c = new Config
+      c.load(TEST_DATA)
+      val log1 = Logger.configure(c, false, true)
+      val log2 = Logger.configure(c.configMap("scribe"), false, false)
+      log1.getLevel mustEqual Logger.DEBUG
+      log2.getLevel mustEqual Logger.DEBUG
+      log1.getHandlers()(0) must haveClass[FileHandler]
+      log1.getHandlers()(0).getLevel mustEqual Logger.DEBUG
+      log1.getHandlers()(1) must haveClass[ScribeHandler]
+      log1.getHandlers()(1).getLevel mustEqual Logger.FATAL
+    }
   }
 }

@@ -239,16 +239,15 @@ object Logger {
    * INFO level and goes to the console (stderr). Any existing log
    * handlers are removed.
    */
-  def reset = {
+  def reset() = {
     clearHandlers
     javaRoot.addHandler(new ConsoleHandler(new FileFormatter))
-    root.setLevel(INFO)
   }
 
   /**
    * Remove all existing log handlers from all existing loggers.
    */
-  def clearHandlers = {
+  def clearHandlers() = {
     for (logger <- elements) {
       for (handler <- logger.getHandlers) {
         try {
@@ -432,7 +431,11 @@ object Logger {
 
     if (! validateOnly) {
       logger.setUseParentHandlers(config.getBool("use_parents", true))
-      level.map { logger.setLevel(_) }
+      level.foreach { level =>
+        if (logger.getLevel() eq null) {
+          logger.setLevel(level)
+        }
+      }
     }
 
     logger

@@ -144,6 +144,11 @@ object Configgy {
           Logger.configure(block, false, false)
         }
       }
+
+      val log = Logger.get("")
+      if (log.getLevel() eq null) {
+        log.setLevel(Logger.INFO)
+      }
     }
   }
 }

@@ -71,6 +71,7 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   def remove(key: String): Boolean = error("read-only attributes")
   def keys: Iterator[String] = (getSystemProperties().keySet ++ env.keySet).elements
   def asMap(): Map[String, String] = error("not implemented")
+  def toConfigString = error("not implemented")
   def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
   def copy(): ConfigMap = this
   def inheritFrom: Option[ConfigMap] = None

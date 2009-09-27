@@ -307,6 +307,7 @@ class Config extends ConfigMap {
   def remove(key: String): Boolean = root.remove(key)
   def keys: Iterator[String] = root.keys
   def asMap(): Map[String, String] = root.asMap()
+  def toConfigString = root.toConfigString
   def copy(): ConfigMap = root.copy()
   def inheritFrom = root.inheritFrom
   def inheritFrom_=(config: Option[ConfigMap]) = root.inheritFrom=(config)
@@ -352,6 +353,15 @@ object Config {
    */
   def fromResource(name: String): Config = {
     fromResource(name, ClassLoader.getSystemClassLoader)
+  }
+
+  /**
+   * Create a Config object from a string containing a config file's contents.
+   */
+  def fromString(data: String): Config = {
+    val config = new Config
+    config.load(data)
+    config
   }
 
   /**

@@ -17,9 +17,8 @@
 package net.lag.configgy
 
 import java.net.InetAddress
+import scala.collection.{immutable, jcl, mutable}
 
-import scala.collection.jcl
-import scala.collection.mutable
 
 // grr, scala can wrap any specific java Map type, but not the generic Map. why not?
 private class JavaMap[K, E](override val underlying: java.util.Map[K, E]) extends jcl.MapWrapper[K, E]
@@ -30,9 +29,7 @@ private class JavaMap[K, E](override val underlying: java.util.Map[K, E]) extend
  * fallback when looking up "$(...)" substitutions in config files.
  */
 private[configgy] object EnvironmentAttributes extends ConfigMap {
-  // FIXME use immutable HashMap.Empty
-  private val env = new mutable.HashMap[String, String]
-  env ++= new JavaMap(System.getenv()).elements
+  private val env = immutable.Map.empty[String, String] ++ (new JavaMap(System.getenv()).elements)
 
   // deal with java.util.Properties extending
   // java.util.Hashtable[Object, Object] and not

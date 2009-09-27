@@ -201,5 +201,35 @@ object AttributesSpec extends Specification {
       sub("age") = 10
       s.toString mustEqual "{: dog={: name=\"Muffy\" } name=\"Sparky\" }"
     }
+
+    "toConfig" in {
+      val s = new Attributes(null, "")
+      s("name") = "Sparky"
+      s("age") = "10"
+      s("diet") = "poor"
+      s("muffy.name") = "Muffy"
+      s("muffy.age") = "11"
+      s("fido.name") = "Fido"
+      s("fido.age") = "5"
+      s("fido.roger.name") = "Roger"
+      s.configMap("fido.roger").inheritFrom = Some(s.configMap("muffy"))
+
+      val expected = """age = "10"
+diet = "poor"
+fido = {
+  age = "5"
+  name = "Fido"
+  roger (inherit="muffy") = {
+    name = "Roger"
+  }
+}
+muffy = {
+  age = "11"
+  name = "Muffy"
+}
+name = "Sparky"
+"""
+      s.toConfig() mustEqual expected
+    }
   }
 }

@@ -325,6 +325,12 @@ trait ConfigMap {
     })
   }
 
+  /**
+   * Convert this ConfigMap into a string which could be written into a config
+   * file and parsed by configgy.
+   */
+  def toConfig(): String
+
 
   /**
    * If the requested key is present, return its value as a string. Otherwise, throw a

@@ -19,6 +19,7 @@ package net.lag.configgy
 import java.util.regex.Pattern
 import javax.{management => jmx}
 import scala.collection.{immutable, mutable, Map}
+import scala.util.Sorting
 import net.lag.extensions._
 
 
@@ -288,6 +289,29 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       }
     }
     ret
+  }
+
+  def toConfig(): String = {
+    toConfigList().mkString("", "\n", "\n")
+  }
+
+  private def toConfigList(): List[String] = {
+    val buffer = new mutable.ListBuffer[String]
+    for (key <- Sorting.stableSort(cells.keys.toList)) {
+      cells(key) match {
+        case StringCell(x) =>
+          buffer += (key + " = \"" + x.quoteC + "\"")
+        case StringListCell(x) =>
+          buffer += (key + " = [")
+          buffer ++= x.map { "  \"" + _.quoteC + "\"," }
+          buffer += "]"
+        case AttributesCell(node) =>
+          buffer += (key + node.inheritFrom.map { " (inherit=\"" + _.asInstanceOf[Attributes].name + "\")" }.getOrElse("") + " = {")
+          buffer ++= node.toConfigList().map { "  " + _ }
+          buffer += "}"
+      }
+    }
+    buffer.toList
   }
 
   def subscribe(subscriber: Subscriber) = {

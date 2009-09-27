@@ -291,7 +291,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     ret
   }
 
-  def toConfig(): String = {
+  def toConfigString: String = {
     toConfigList().mkString("", "\n", "\n")
   }
 

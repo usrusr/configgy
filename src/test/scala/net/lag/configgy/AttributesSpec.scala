@@ -229,7 +229,7 @@ muffy = {
 }
 name = "Sparky"
 """
-      s.toConfig() mustEqual expected
+      s.toConfigString mustEqual expected
     }
   }
 }

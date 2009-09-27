@@ -329,7 +329,7 @@ trait ConfigMap {
    * Convert this ConfigMap into a string which could be written into a config
    * file and parsed by configgy.
    */
-  def toConfig(): String
+  def toConfigString: String
 
 
   /**

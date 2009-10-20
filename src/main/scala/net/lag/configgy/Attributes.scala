@@ -306,7 +306,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
           buffer ++= x.map { "  \"" + _.quoteC + "\"," }
           buffer += "]"
         case AttributesCell(node) =>
-          buffer += (key + node.inheritFrom.map { " (inherit=\"" + _.asInstanceOf[Attributes].name + "\")" }.getOrElse("") + " = {")
+          buffer += (key + node.inheritFrom.map { " (inherit=\"" + _.asInstanceOf[Attributes].name + "\")" }.getOrElse("") + " {")
           buffer ++= node.toConfigList().map { "  " + _ }
           buffer += "}"
       }

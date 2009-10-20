@@ -216,14 +216,14 @@ object AttributesSpec extends Specification {
 
       val expected = """age = "10"
 diet = "poor"
-fido = {
+fido {
   age = "5"
   name = "Fido"
-  roger (inherit="muffy") = {
+  roger (inherit="muffy") {
     name = "Roger"
   }
 }
-muffy = {
+muffy {
   age = "11"
   name = "Muffy"
 }

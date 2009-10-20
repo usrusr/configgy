@@ -286,14 +286,7 @@ object Logger {
   /** An alias for `get(name)` */
   def apply(name: String) = get(name)
 
-  private def get(depth: Int): Logger = {
-    val className = new Throwable().getStackTrace()(depth).getClassName
-    if (className.endsWith("$")) {
-      get(className.substring(0, className.length - 1))
-    } else {
-      get(className)
-    }
-  }
+  private def get(depth: Int): Logger = getForClassName(new Throwable().getStackTrace()(depth).getClassName)
 
   /**
    * Return a logger for the class name of the class/object that called
@@ -305,6 +298,22 @@ object Logger {
 
   /** An alias for `get()` */
   def apply() = get(2)
+
+  private def getForClassName(className: String) = {
+    if (className.endsWith("$")) {
+      get(className.substring(0, className.length - 1))
+    } else {
+      get(className)
+    }
+  }
+
+  /**
+   * Return a logger for the package of the class given.
+   */
+  def get(cls: Class[_]): Logger = getForClassName(cls.getName)
+
+  /** An alias for `get(class)` */
+  def apply(cls: Class[_]) = get(cls)
 
   /**
    * Iterate the Logger objects that have been created.

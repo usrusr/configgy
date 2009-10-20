@@ -149,6 +149,11 @@ object LoggingSpec extends Specification with TestHelper {
       eat(handler.toString) mustEqual List("ERR [20080329-05:53:16.722] (root): error!")
     }
 
+    "figure out package names" in {
+      val log1 = Logger(getClass)
+      log1.name mustEqual "net.lag.logging.LoggingSpec"
+    }
+
     "log package names" in {
       val log1 = Logger.get("net.lag.logging.Skeletor")
       log1.warning("I am coming for you!")

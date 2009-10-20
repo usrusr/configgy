@@ -202,7 +202,7 @@ object AttributesSpec extends Specification {
       s.toString mustEqual "{: dog={: name=\"Muffy\" } name=\"Sparky\" }"
     }
 
-    "toConfig" in {
+    "toConfigString" in {
       val s = new Attributes(null, "")
       s("name") = "Sparky"
       s("age") = "10"

@@ -1,7 +1,7 @@
 <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
   <info organisation="net.lag"
     module="configgy"
-    revision="1.4.2"
+    revision="1.4.3"
     e:testclass="net.lag.TestRunner"
     e:buildpackage="net.lag.configgy"
   />
@@ -19,7 +19,7 @@
     <!-- i guess scala-compiler.jar is needed for MainGenericRunner -->
     <dependency org="org.scala-lang" name="scala-compiler" rev="2.7.5" />
     <dependency org="org.scala-lang" name="scala-library" rev="2.7.5" />
-    <dependency org="org.scala-tools.testing" name="specs" rev="1.6.1-SNAPSHOT" conf="test->*" />
+    <dependency org="org.scala-tools.testing" name="specs" rev="1.4.4" conf="test->*" />
     <dependency org="junit" name="junit" rev="4.5" conf="test->*" />
     <dependency org="org.scala-tools" name="vscaladoc" rev="1.1-md-3" conf="bootstrap->*" />
   </dependencies>

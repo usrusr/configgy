@@ -193,7 +193,7 @@ class Config extends ConfigMap {
 
   def subscribe(subscriber: Subscriber) = subscribe(null.asInstanceOf[String], subscriber)
 
-  override def subscribe(f: (Option[ConfigMap]) => Unit) = subscribe(null.asInstanceOf[String])(f)
+  override def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = subscribe(null.asInstanceOf[String])(f)
 
   private[configgy] def unsubscribe(subkey: SubscriptionKey) = synchronized {
     subscriberKeys.get(subkey.id) match {

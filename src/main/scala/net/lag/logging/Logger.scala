@@ -99,7 +99,7 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
     if ((myLevel eq null) || (level.intValue >= myLevel.intValue)) {
       val record = new javalog.LogRecord(level, message)
       if (items.size > 0) {
-        record.setParameters(items.toArray.asInstanceOf[Array[Object]])
+        record.setParameters(items.toArray[Any].asInstanceOf[Array[AnyRef]])
       }
       record.setLoggerName(wrapped.getName)
       if (thrown ne null) {
@@ -227,12 +227,12 @@ object Logger {
   /**
    * Return a map of log level values to the corresponding Level objects.
    */
-  def levels: Map[Int, Level] = levelsMap.readOnly
+  def levels: Map[Int, Level] = levelsMap
 
   /**
    * Return a map of log level names to the corresponding Level objects.
    */
-  def levelNames: Map[String, Level] = levelNamesMap.readOnly
+  def levelNames: Map[String, Level] = levelNamesMap
 
   /**
    * Reset logging to an initial state, where all logging is set at

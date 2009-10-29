@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package net.lag.configgy
+package net.lag
+package configgy
 
 import _root_.java.io.{BufferedReader, InputStreamReader, File, FileInputStream, FileOutputStream}
 import _root_.net.lag.logging.{FileHandler, Logger}

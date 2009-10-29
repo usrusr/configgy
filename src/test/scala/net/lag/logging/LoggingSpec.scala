@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package net.lag.logging
+package net.lag
+package logging
 
 import _root_.java.io._
 import _root_.java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package net.lag
-package configgy
+package net.lag.configgy
 
 import _root_.java.io.{BufferedReader, InputStreamReader, File, FileInputStream, FileOutputStream}
 import _root_.net.lag.logging.{FileHandler, Logger}
 import _root_.org.specs._
-
+import net.lag.TestHelper
 
 object ConfiggySpec extends Specification with TestHelper {
 

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package net.lag
-package logging
+package net.lag.logging
 
 import _root_.java.io._
 import _root_.java.net.{DatagramPacket, DatagramSocket, InetSocketAddress}
@@ -23,7 +22,7 @@ import _root_.java.util.{Calendar, Date, TimeZone, logging => javalog}
 import _root_.org.specs._
 import _root_.net.lag.configgy.Config
 import _root_.net.lag.extensions._
-
+import net.lag.TestHelper
 
 object Crazy {
   def cycle(n: Int): Unit = {
@@ -78,7 +77,6 @@ class ImmediatelyRollingFileHandler(filename: String, policy: Policy, append: Bo
     super.publish(record)
   }
 }
-
 
 object LoggingSpec extends Specification with TestHelper {
 

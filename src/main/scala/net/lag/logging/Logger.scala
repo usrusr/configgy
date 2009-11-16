@@ -326,7 +326,7 @@ object Logger {
     val e = manager.getLoggerNames
     while (e.hasMoreElements) {
       val item = manager.getLogger(e.nextElement.asInstanceOf[String])
-      loggers += get(item.getName())
+      if (item ne null) loggers += get(item.getName)
     }
     loggers.elements
   }

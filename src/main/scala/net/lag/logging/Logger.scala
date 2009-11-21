@@ -362,7 +362,7 @@ object Logger {
 
     val logger = Logger.get(config.getString("node", ""))
     if (!validateOnly && allowNestedBlocks) {
-      for (val handler <- logger.getHandlers) {
+      for (handler <- logger.getHandlers) {
         logger.removeHandler(handler)
       }
     }
@@ -378,17 +378,17 @@ object Logger {
       handlers = new ConsoleHandler(formatter) :: handlers
     }
 
-    for (val hostname <- config.getString("syslog_host")) {
+    for (hostname <- config.getString("syslog_host")) {
       val useIsoDateFormat = config.getBool("syslog_use_iso_date_format", true)
       val handler = new SyslogHandler(useIsoDateFormat, hostname)
-      for (val serverName <- config.getString("syslog_server_name")) {
+      for (serverName <- config.getString("syslog_server_name")) {
         handler.serverName = serverName
       }
       handlers = handler :: handlers
     }
 
     // options for using a logfile
-    for (val filename <- config.getString("filename")) {
+    for (filename <- config.getString("filename")) {
       // i bet there's an easier way to do this.
       val policy = config.getString("roll", "never").toLowerCase match {
         case "never" => Never
@@ -427,7 +427,7 @@ object Logger {
       }
     }
 
-    for (val handler <- handlers) {
+    for (handler <- handlers) {
       level.map { handler.setLevel(_) }
       handler.useUtc = config.getBool("utc", false)
       handler.truncateAt = config.getInt("truncate", 0)

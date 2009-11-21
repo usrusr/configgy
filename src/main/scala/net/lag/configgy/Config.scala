@@ -48,7 +48,7 @@ private class SubscriptionNode {
     val out = new StringBuilder("%d" format subscribers.size)
     if (map.size > 0) {
       out.append(" { ")
-      for (val key <- map.keys) {
+      for (key <- map.keys) {
         out.append(key)
         out.append("=")
         out.append(map(key).toString)
@@ -67,7 +67,7 @@ private class SubscriptionNode {
     }
 
     // first, call all subscribers for this node.
-    for (val subscriber <- subscribers) {
+    for (subscriber <- subscribers) {
       phase match {
         case VALIDATE_PHASE => subscriber.validate(current, replacement)
         case COMMIT_PHASE => subscriber.commit(current, replacement)
@@ -89,7 +89,7 @@ private class SubscriptionNode {
       }
     }
 
-    for (val (segment, node) <- nextNodes) {
+    for ((segment, node) <- nextNodes) {
       val subCurrent = current match {
         case None => None
         case Some(x) => x.getConfigMap(segment)
@@ -173,7 +173,7 @@ class Config extends ConfigMap {
     nextKey += 1
     var node = subscribers
     if (key ne null) {
-      for (val segment <- key.split("\\.")) {
+      for (segment <- key.split("\\.")) {
         node = node.get(segment)
       }
     }

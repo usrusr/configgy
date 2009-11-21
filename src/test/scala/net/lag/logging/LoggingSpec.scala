@@ -84,7 +84,7 @@ object LoggingSpec extends Specification with TestHelper {
 
   // turn logged console lines into a list of repeatable strings
   private def eat(in: String): List[String] = {
-    for (val line <- in.split("\n").toList) yield {
+    for (line <- in.split("\n").toList) yield {
       line.regexSub("""LoggingSpec.scala:\d+""".r) { m => "LoggingSpec.scala:NNN" }
     }.regexSub("""LoggingSpec\$[\w\$]+""".r) {
       m => "LoggingSpec$$"

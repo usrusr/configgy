@@ -118,6 +118,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
           flush()
         case e: Exception =>
           log.error(e, "Failed to send %d log entries to scribe server at %s", count, server)
+          close()
       }
     }
   }

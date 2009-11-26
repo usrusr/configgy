@@ -448,7 +448,8 @@ object LoggingSpec extends Specification with TestHelper {
         "scribe_buffer_msec = 333\n" +
         "scribe_backoff_msec = 501\n" +
         "scribe_max_packet_size = 66\n" +
-        "scribe_category = \"stats\"\n"
+        "scribe_category = \"stats\"\n" +
+        "scribe_max_buffer = 102\n"
       val c = new Config
       c.load(TEST_DATA)
       val log = Logger.configure(c, false, true)
@@ -459,6 +460,7 @@ object LoggingSpec extends Specification with TestHelper {
       handler.connectBackoffMilliseconds mustEqual 501
       handler.maxMessagesPerTransaction mustEqual 66
       handler.category mustEqual "stats"
+      handler.maxMessagesToBuffer mustEqual 102
     }
 
     "set two handlers on the same logger without resetting the level" in {

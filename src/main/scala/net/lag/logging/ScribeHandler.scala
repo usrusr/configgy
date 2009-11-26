@@ -43,6 +43,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   var lastConnectAttempt: Long = 0
 
   var maxMessagesPerTransaction = 1000
+  var maxMessagesToBuffer = 10000
 
   var hostname = "localhost"
   var port = 1463
@@ -167,6 +168,9 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   def publish(record: javalog.LogRecord): Unit = synchronized {
     if (record.getLoggerName == "scribe") return
     queue += getFormatter.format(record)
+    while (queue.size > maxMessagesToBuffer) {
+      queue.trimStart(1)
+    }
     if (System.currentTimeMillis - lastTransmission >= bufferTimeMilliseconds) {
       flush()
     }

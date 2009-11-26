@@ -431,6 +431,17 @@ object LoggingSpec extends Specification with TestHelper {
         "05468697320697320616e6f74686572206d6573736167652e0a0000"
     }
 
+    "throw away log messages if scribe is too busy" in {
+      val scribe = new ScribeHandler(new GenericFormatter(""))
+      scribe.category = "test"
+      scribe.maxMessagesToBuffer = 1
+      scribe.bufferTimeMilliseconds = 5000
+      Logger.get("").addHandler(scribe)
+      Logger.get("hello").info("This is a message.")
+      Logger.get("hello").info("This is another message.")
+      scribe.queue.toList mustEqual List("This is another message.\n")
+    }
+
     "configure a scribe server" in {
       val TEST_DATA =
         "scribe_server = \"fake:8080\"\n" +

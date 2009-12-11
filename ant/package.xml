@@ -64,7 +64,7 @@
   </target>
 
   <target name="package" depends="test, make-non-executable-jar, make-executable-jar,
-    generate-scripts, docs" description="build complete jar(s) and docs">
+    generate-scripts" description="build complete jar(s) and docs">
     <ivy:makepom ivyfile="${basedir}/ivy/ivy.xml" pomfile="${dist.dir}/${dist.name}.pom">
       <mapping conf="*" scope="runtime" />
       <mapping conf="bootstrap" scope="provided" />

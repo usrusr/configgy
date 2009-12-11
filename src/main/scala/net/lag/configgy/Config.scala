@@ -33,6 +33,7 @@ private case object COMMIT_PHASE extends Phase
 private class SubscriptionNode {
   val subscribers = new mutable.HashSet[Subscriber]
   val map = new mutable.HashMap[String, SubscriptionNode]
+  def mapIterator: Iterator[(String, SubscriptionNode)] = map.iterator
 
   def get(name: String): SubscriptionNode = map.getOrElseUpdate(name, new SubscriptionNode)
 
@@ -70,16 +71,9 @@ private class SubscriptionNode {
      * continue the validate/commit. if the key is exhausted, call
      * subscribers for ALL nodes below this one.
      */
-    var nextNodes: Iterator[(String, SubscriptionNode)] = null
-    key match {
-      case Nil => nextNodes = map.iterator
-      case segment :: _ => {
-        map.get(segment) match {
-            case None => return     // done!
-            case Some(node) => nextNodes = Iterator.single((segment, node))
-        }
-      }
-    }
+    val nextNodes =
+      if (key.isEmpty) map.toList
+      else map.toList find (_._1 == key.head) toList
 
     for ((segment, node) <- nextNodes) {
       val subCurrent = current flatMap (_ getConfigMap segment)
@@ -307,16 +301,12 @@ object Config {
    * and filename. The filename must be relative to the path. The path is
    * used to resolve filenames given in "include" lines.
    */
-  def fromFile(path: String, filename: String): Config = {
-    val config = new Config
-    try {
-      config.loadFile(path, filename)
-    } catch {
-      case e: Throwable =>
-        Logger.get.critical(e, "Failed to load config file '%s/%s'", path, filename)
-        throw e
+  def fromFile(path: String, filename: String) = returning(new Config) {    
+    try _.loadFile(path, filename)
+    catch { case e =>
+      Logger.get.critical(e, "Failed to load config file '%s/%s'", path, filename)
+      throw e
     }
-    config
   }
 
   /**
@@ -324,13 +314,9 @@ object Config {
    * The base folder will be extracted from the filename and used as a base
    * path for resolving filenames given in "include" lines.
    */
-  def fromFile(filename: String): Config = {
-    val n = filename.lastIndexOf('/')
-    if (n < 0) {
-      fromFile(new File(".").getCanonicalPath, filename)
-    } else {
-      fromFile(filename.substring(0, n), filename.substring(n + 1))
-    }
+  def fromFile(filename: String): Config = filename.lastIndexOf('/') match {
+    case -1   => fromFile(new File(".").getCanonicalPath, filename)
+    case idx  => fromFile(filename take idx, filename drop (idx + 1))
   }
 
   /**
@@ -345,38 +331,28 @@ object Config {
   /**
    * Create a Config object from a string containing a config file's contents.
    */
-  def fromString(data: String): Config = {
-    val config = new Config
-    config.load(data)
-    config
-  }
+  def fromString(data: String) = returning(new Config) { _ load data }
 
   /**
    * Create a Config object from the given named resource inside this jar
    * file, using a specific class loader. "include" lines will also operate
    * on resource paths.
    */
-  def fromResource(name: String, classLoader: ClassLoader): Config = {
-    val config = new Config
-    try {
-      config.importer = new ResourceImporter(classLoader)
-      config.loadFile(name)
-    } catch {
-      case e: Throwable =>
-        Logger.get.critical(e, "Failed to load config resource '%s'", name)
-        throw e
+  def fromResource(name: String, classLoader: ClassLoader): Config =
+    returning(new Config) { config =>
+      try {
+        config.importer = new ResourceImporter(classLoader)
+        config.loadFile(name)
+      } catch {
+        case e: Throwable =>
+          Logger.get.critical(e, "Failed to load config resource '%s'", name)
+          throw e
+      }
     }
-    config
-  }
 
   /**
    * Create a Config object from a map of String keys and String values.
    */
-  def fromMap(m: Map[String, String]) = {
-    val config = new Config
-    for ((k, v) <- m) {
-      config(k) = v
-    }
-    config
-  }
+  def fromMap(m: Map[String, String]) = 
+    returning(new Config) { config => for ((k, v) <- m) config(k) = v }
 }

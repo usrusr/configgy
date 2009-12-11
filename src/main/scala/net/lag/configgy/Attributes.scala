@@ -139,10 +139,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   def replaceWith(newAttributes: Attributes): Unit = {
     // stash away subnodes and reinsert them.
-    val subnodes = cells.map {
-      case (key, cell: AttributesCell) => (key, cell)
-      case _ => null
-    }.filter { _ ne null }.toList
+    val subnodes = for ((key, cell @ AttributesCell(_)) <- cells.toList) yield (key, cell)
     cells.clear
     cells ++= newAttributes.cells
     for ((key, cell) <- subnodes) {

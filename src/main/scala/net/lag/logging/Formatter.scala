@@ -81,6 +81,9 @@ abstract class Formatter extends javalog.Formatter {
    * time.
    */
   def useUtc = _useUtc
+  
+  private def calendarForZone(name: String) =
+    new GregorianCalendar(TimeZone getTimeZone name)
 
   /**
    * Set whether dates in log messages should be reported in UTC time
@@ -90,13 +93,9 @@ abstract class Formatter extends javalog.Formatter {
    */
   def useUtc_=(utc: Boolean) = {
     _useUtc = utc
-    if (utc) {
-      // kind of ridiculous.
-      calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
-    } else {
-      calendar = new GregorianCalendar
-    }
-    dateFormat.setCalendar(calendar)
+    calendar = if (utc) calendarForZone("UTC") else new GregorianCalendar
+    
+    dateFormat setCalendar calendar
   }
 
   /**
@@ -112,8 +111,8 @@ abstract class Formatter extends javalog.Formatter {
    * name must be one known by the java <code>TimeZone</code> class.
    */
   def timeZone_=(name: String) = {
-    calendar = new GregorianCalendar(TimeZone.getTimeZone(name))
-    dateFormat.setCalendar(calendar)
+    calendar = calendarForZone(name)
+    dateFormat setCalendar calendar
   }
 
   /**

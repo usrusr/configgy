@@ -83,9 +83,9 @@ final class ConfiggyString(wrapped: String) {
         case '\\' => "\\\\"
         case c =>
           if (c <= 255) {
-              "\\x%02x".format(c.asInstanceOf[Int])
+              "\\x%02x" format c.toInt
           } else {
-              "\\u%04x" format c.asInstanceOf[Int]
+              "\\u%04x" format c.toInt
           }
       }
     }

@@ -37,16 +37,16 @@ import net.lag.extensions._
 class RuntimeEnvironment(cls: Class[_]) {
   // load build info, if present.
   private var buildProperties = new Properties
-  try {
-    buildProperties.load(cls.getResource("build.properties").openStream)
-  } catch {
-    case _ =>
-  }
+  try buildProperties load cls.getResource("build.properties").openStream
+  catch { case _: Exception => () }
+  
+  def getProp(key: String, default: String = "unknown") = buildProperties.getProperty(key, default)
 
-  val jarName = buildProperties.getProperty("name", "unknown")
-  val jarVersion = buildProperties.getProperty("version", "0.0")
-  val jarBuild = buildProperties.getProperty("build_name", "unknown")
-  val jarBuildRevision = buildProperties.getProperty("build_revision", "unknown")
+  val jarName = getProp("name")
+  val jarVersion = getProp("version", "0.0")
+  val jarBuild = getProp("build_name")
+  val jarBuildRevision = getProp("build_revision")
+  
   val stageName = System.getProperty("stage", "production")
 
 
@@ -91,12 +91,15 @@ class RuntimeEnvironment(cls: Class[_]) {
   }
 
   private def help = {
-    println
-    println("%s %s (%s)".format(jarName, jarVersion, jarBuild))
-    println("options:")
-    println("    -f <filename>")
-    println("        load config file (default: %s)".format(configFilename))
-    println
+    println("""|
+      |%s %s (%s)
+      |options:
+      |    -f <filename>
+      |        load config file (default: %s)
+      |""".stripMargin.format(
+        jarName, jarVersion, jarBuild, configFilename
+      )
+    )
     System.exit(0)
   }
 

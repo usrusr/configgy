@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package net.lag.configgy
+package net.lag
+package configgy
 
 import java.io.File
 import java.lang.management.ManagementFactory

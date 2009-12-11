@@ -57,12 +57,8 @@ class RuntimeEnvironment(cls: Class[_]) {
    */
   lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
-    (System.getProperty("java.class.path") split System.getProperty("path.separator")).map { elem =>
-      elem match {
-        case pattern(path) => Some(new File(path).getCanonicalPath)
-        case _ => None
-      }
-    }.flatMap(identity[Option[String]]).firstOption
+    val cps = System.getProperty("java.class.path") split System.getProperty("path.separator")
+    cps partialMap { case pattern(path)  => new File(path).getCanonicalPath } headOption
   }
 
   /**

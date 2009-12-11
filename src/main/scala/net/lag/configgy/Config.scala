@@ -31,24 +31,16 @@ private case object COMMIT_PHASE extends Phase
 
 
 private class SubscriptionNode {
-  var subscribers = new mutable.HashSet[Subscriber]
-  var map = new mutable.HashMap[String, SubscriptionNode]
+  val subscribers = new mutable.HashSet[Subscriber]
+  val map = new mutable.HashMap[String, SubscriptionNode]
 
-  def get(name: String): SubscriptionNode = {
-    map.get(name) match {
-      case Some(x) => x
-      case None =>
-        val node = new SubscriptionNode
-        map(name) = node
-        node
-    }
-  }
+  def get(name: String): SubscriptionNode = map.getOrElseUpdate(name, new SubscriptionNode)
 
   override def toString() = {
     val out = new StringBuilder("%d" format subscribers.size)
     if (map.size > 0) {
       out.append(" { ")
-      for (key <- map.keys) {
+      for (key <- map.keysIterator) {
         out.append(key)
         out.append("=")
         out.append(map(key).toString)
@@ -80,7 +72,7 @@ private class SubscriptionNode {
      */
     var nextNodes: Iterator[(String, SubscriptionNode)] = null
     key match {
-      case Nil => nextNodes = map.elements
+      case Nil => nextNodes = map.iterator
       case segment :: _ => {
         map.get(segment) match {
             case None => return     // done!
@@ -90,15 +82,10 @@ private class SubscriptionNode {
     }
 
     for ((segment, node) <- nextNodes) {
-      val subCurrent = current match {
-        case None => None
-        case Some(x) => x.getConfigMap(segment)
-      }
-      val subReplacement = replacement match {
-        case None => None
-        case Some(x) => x.getConfigMap(segment)
-      }
-      node.validate(if (key == Nil) Nil else key.tail, subCurrent, subReplacement, phase)
+      val subCurrent = current flatMap (_ getConfigMap segment)
+      val subReplacement = replacement flatMap (_ getConfigMap segment)
+
+      node.validate(key drop 1, subCurrent, subReplacement, phase)
     }
   }
 }
@@ -149,21 +136,19 @@ class Config extends ConfigMap {
   /**
    * Read config data from a file and use it to populate this object.
    */
-  def loadFile(filename: String) = {
+  def loadFile(filename: String) {
     load(importer.importFile(filename))
   }
 
   /**
    * Read config data from a file and use it to populate this object.
    */
-  def loadFile(path: String, filename: String) = {
+  def loadFile(path: String, filename: String) {
     importer = new FilesystemImporter(path)
-    load(importer.importFile(filename))
+    loadFile(filename)
   }
 
-
   override def toString = root.toString
-
 
   // -----  subscriptions
 
@@ -191,9 +176,9 @@ class Config extends ConfigMap {
     })
   }
 
-  def subscribe(subscriber: Subscriber) = subscribe(null.asInstanceOf[String], subscriber)
+  def subscribe(subscriber: Subscriber): SubscriptionKey = subscribe(null: String, subscriber)
 
-  override def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = subscribe(null.asInstanceOf[String])(f)
+  override def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = subscribe(null: String)(f)
 
   private[configgy] def unsubscribe(subkey: SubscriptionKey) = synchronized {
     subscriberKeys.get(subkey.id) match {
@@ -235,7 +220,7 @@ class Config extends ConfigMap {
   def registerWithJmx(packageName: String): Unit = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
     val nodes = root.getJmxNodes(packageName, "")
-    val nodeNames = nodes.map { case (name, bean) => name }
+    val nodeNames = nodes map (_._1)
     // register any new nodes
     nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
       try {
@@ -246,7 +231,8 @@ class Config extends ConfigMap {
       }
     }
     // unregister nodes that vanished
-    (jmxNodes -- nodeNames).foreach { name => mbs.unregisterMBean(new jmx.ObjectName(name)) }
+    for (name <- jmxNodes ; if !(nodeNames contains name))
+      mbs.unregisterMBean(new jmx.ObjectName(name))
 
     jmxNodes = nodeNames
     jmxPackageName = packageName
@@ -260,6 +246,7 @@ class Config extends ConfigMap {
 
   @throws(classOf[ValidationException])
   private def deepChange(name: String, key: String, operation: (ConfigMap, String) => Boolean): Boolean = synchronized {
+    // println("deepChange(%s, %s)".format(name, key))
     val fullKey = if (name == "") (key) else (name + "." + key)
     val newRoot = root.copy
     val keyList = fullKey.split("\\.").toList
@@ -387,7 +374,7 @@ object Config {
    */
   def fromMap(m: Map[String, String]) = {
     val config = new Config
-    for ((k, v) <- m.elements) {
+    for ((k, v) <- m) {
       config(k) = v
     }
     config

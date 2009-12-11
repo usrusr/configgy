@@ -31,8 +31,6 @@ trait Importer {
   @throws(classOf[ParseException])
   def importFile(filename: String): String
 
-  private val BUFFER_SIZE = 8192
-
   /**
    * Exhaustively reads an InputStream and converts it into a String (using
    * UTF-8 encoding). This is meant as a helper function for custom Importer
@@ -41,6 +39,7 @@ trait Importer {
    * No exceptions are caught!
    */
   protected def streamToString(in: InputStream): String = {
+    val BUFFER_SIZE = 8192
     val reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))
     val buffer = new Array[Char](BUFFER_SIZE)
     val out = new StringBuilder
@@ -48,7 +47,7 @@ trait Importer {
     while (n >= 0) {
       n = reader.read(buffer, 0, buffer.length)
       if (n >= 0) {
-        out.append(buffer, 0, n)
+        out.appendAll(buffer, 0, n)
       }
     }
     out.toString

@@ -25,13 +25,13 @@ import net.lag.configgy.{ConfigException, ConfigMap}
 
 
 // replace java's ridiculous log levels with the standard ones.
-sealed case class Level(name: String, value: Int) extends javalog.Level(name, value) {
+sealed abstract class Level(val name: String, val value: Int) extends javalog.Level(name, value) {
   Logger.levelNamesMap(name) = this
   Logger.levelsMap(value) = this
 }
 
 object Level {
-  case object OFF extends Level("OFF", Math.MAX_INT)
+  case object OFF extends Level("OFF", Int.MaxValue)
   case object FATAL extends Level("FATAL", 1000)
   case object CRITICAL extends Level("CRITICAL", 970)
   case object ERROR extends Level("ERROR", 930)
@@ -39,7 +39,12 @@ object Level {
   case object INFO extends Level("INFO", 800)
   case object DEBUG extends Level("DEBUG", 500)
   case object TRACE extends Level("TRACE", 400)
-  case object ALL extends Level("ALL", Math.MIN_INT)
+  case object ALL extends Level("ALL", Int.MinValue)
+  
+  def unapply(x: Any) = x match {
+    case x: Level => Some((x.name, x.value))
+    case _        => None
+  }
 }
 
 
@@ -177,7 +182,6 @@ object Logger {
   // clear out some cruft from the java root logger.
   private val javaRoot = javalog.Logger.getLogger("")
 
-
   // ----- convenience methods:
 
   /** OFF is used to turn off logging entirely. */
@@ -247,46 +251,38 @@ object Logger {
   /**
    * Remove all existing log handlers from all existing loggers.
    */
-  def clearHandlers() = {
+  def clearHandlers() =
     for (logger <- elements) {
       for (handler <- logger.getHandlers) {
-        try {
-          handler.close()
-        } catch { case _ => () }
-        logger.removeHandler(handler)
+        try handler.close()
+        catch { case _ => () }
+        logger removeHandler handler
       }
-      logger.setLevel(null)
+      logger setLevel null
     }
-  }
 
   /**
    * Return a logger for the given package name. If one doesn't already
    * exist, a new logger will be created and returned.
    */
-  def get(name: String): Logger = {
-    loggersCache.get(name) match {
-      case Some(logger) =>
-        logger
-      case None =>
-        val manager = javalog.LogManager.getLogManager
-        val logger = manager.getLogger(name) match {
-          case null =>
-            val javaLogger = javalog.Logger.getLogger(name)
-            manager.addLogger(javaLogger)
-            new Logger(name, javaLogger)
-          case x: javalog.Logger =>
-            new Logger(name, x)
-        }
-        logger.setUseParentHandlers(true)
-        loggersCache.put(name, logger)
-        logger
-    }
-  }
+  def get(name: String): Logger = loggersCache.getOrElseUpdate(name, {
+    val manager = javalog.LogManager.getLogManager
+    val logger = 
+      new Logger(name, Option(manager getLogger name) getOrElse {
+        val javaLogger = javalog.Logger.getLogger(name)
+        manager.addLogger(javaLogger)
+        javaLogger
+      })
+
+    logger.setUseParentHandlers(true)
+    logger
+  })
 
   /** An alias for `get(name)` */
   def apply(name: String) = get(name)
 
-  private def get(depth: Int): Logger = getForClassName(new Throwable().getStackTrace()(depth).getClassName)
+  private def get(depth: Int): Logger =
+    getForClassName(new Throwable().getStackTrace()(depth).getClassName)
 
   /**
    * Return a logger for the class name of the class/object that called
@@ -299,13 +295,10 @@ object Logger {
   /** An alias for `get()` */
   def apply() = get(2)
 
-  private def getForClassName(className: String) = {
-    if (className.endsWith("$")) {
-      get(className.substring(0, className.length - 1))
-    } else {
-      get(className)
-    }
-  }
+  private def getForClassName(className: String) = get(
+    if (className endsWith "$") className dropRight 1
+    else className
+  )
 
   /**
    * Return a logger for the package of the class given.
@@ -327,7 +320,7 @@ object Logger {
       val item = manager.getLogger(e.nextElement.asInstanceOf[String])
       loggers += get(item.getName())
     }
-    loggers.elements
+    loggers.iterator
   }
 
   /**
@@ -353,31 +346,25 @@ object Logger {
                        "scribe_buffer_msec", "scribe_backoff_msec",
                        "scribe_max_packet_size", "scribe_category",
                        "scribe_max_buffer")
-    var forbidden = config.keys.filter(x => !(allowed contains x)).toList
-    if (allowNestedBlocks) {
-      forbidden = forbidden.filter(x => !config.getConfigMap(x).isDefined)
-    }
-    if (forbidden.length > 0) {
+    var forbidden = config.keys.toList filterNot (allowed contains _)
+    if (allowNestedBlocks)
+      forbidden = forbidden filter (x => (config getConfigMap x).isEmpty)
+
+    if (forbidden.nonEmpty)
       throw new LoggingException("Unknown logging config attribute(s): " + forbidden.mkString(", "))
-    }
 
     val logger = Logger.get(config.getString("node", ""))
-    if (!validateOnly && allowNestedBlocks) {
-      for (handler <- logger.getHandlers) {
-        logger.removeHandler(handler)
-      }
-    }
+    if (!validateOnly && allowNestedBlocks)
+      logger.getHandlers foreach (logger removeHandler _)
 
     val formatter = config.getString("prefix_format") match {
       case None => new FileFormatter
       case Some(format) => new GenericFormatter(format)
     }
 
-    var handlers: List[Handler] = Nil
-
-    if (config.getBool("console", false)) {
-      handlers = new ConsoleHandler(formatter) :: handlers
-    }
+    var handlers: List[Handler] =
+      if (config.getBool("console", false)) List(new ConsoleHandler(formatter))
+      else Nil
 
     for (hostname <- config.getString("syslog_host")) {
       val useIsoDateFormat = config.getBool("syslog_use_iso_date_format", true)
@@ -423,11 +410,8 @@ object Logger {
      * signal to javalog to use the parent logger's level. this is the
      * usual desired behavior, but not really documented anywhere. sigh.
      */
-    val level = config.getString("level").map { levelName =>
-      levelNamesMap.get(levelName.toUpperCase) match {
-        case Some(x) => x
-        case None => throw new LoggingException("Unknown log level: " + levelName)
-      }
+    val level = config.getString("level") map { levelName =>
+      levelNamesMap.getOrElse(levelName.toUpperCase, throw new LoggingException("Unknown log level: " + levelName))
     }
 
     for (handler <- handlers) {

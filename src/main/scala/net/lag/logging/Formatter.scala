@@ -29,7 +29,7 @@ private[logging] object Formatter {
     var out = new mutable.ArrayBuffer[String]
     out ++= (for (elem <- t.getStackTrace) yield "    at %s".format(elem.toString))
     if (out.length > limit) {
-      out = new mutable.ArrayBuffer[String] ++ out.take(limit)
+      out = new mutable.ArrayBuffer[String] ++= out.take(limit)
       out += "    (...more...)"
     }
     if (t.getCause ne null) {

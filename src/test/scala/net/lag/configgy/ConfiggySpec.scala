@@ -199,14 +199,16 @@ object ConfiggySpec extends Specification with TestHelper {
 
     "change a nested value without invalidating ConfigMap references" in {
       withTempFolder {
-        val data1 =
+        val data1 = {
           "<robot>\n" +
           "    name=\"Nibbler\"\n" +
           "    age = 23002\n" +
           "    nested {\n" +
-          "        thing = 5\n"
+          "        thing = 5\n" +
           "    }\n" +
           "</robot>\n"
+        }
+
         writeConfigFile("test.conf", data1)
         Configgy.configure(folderName, "test.conf")
 

@@ -23,6 +23,12 @@ import scala.util.Sorting
 import net.lag.extensions._
 
 private[configgy] object Attributes {
+  abstract class CellType[T](val value: T) {    
+    def fromConfig: String => T
+    def toConfig: T => String
+    def isValid: String => Boolean
+  }
+
   sealed abstract class Cell { def asString: String } 
   case class StringCell(value: String) extends Cell { def asString = value }
   case class AttributesCell(attr: Attributes) extends Cell { def asString = attr.toString }

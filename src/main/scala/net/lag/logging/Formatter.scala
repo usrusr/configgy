@@ -135,34 +135,21 @@ abstract class Formatter extends javalog.Formatter {
   override def format(record: javalog.LogRecord): String = {
     val name = record.getLoggerName match {
       case "" => "(root)"
-      case n => {
-        val nameSegments = n.split("\\.")
-        if (nameSegments.length >= 2) {
-          if (useFullPackageNames) {
-            nameSegments.slice(0, nameSegments.length - 1).mkString(".")
-          } else {
-            nameSegments(nameSegments.length - 2)
-          }
-        } else {
-          n
-        }
+      case n  =>
+        val segments = n.split("\\.")
+        if (segments.length < 2) n
+        else if (useFullPackageNames) segments dropRight 1 mkString "."
+        else segments dropRight 1 last
+    }
+
+    val message: String = {
+      val m = record match {
+        case r: LazyLogRecord                                 => r.generate.toString
+        case r: javalog.LogRecord if r.getParameters == null  => r.getMessage
+        case r: javalog.LogRecord                             => String.format(r.getMessage, r.getParameters: _*)
       }
-    }
-
-    var message: String = record match {
-      case r: LazyLogRecord =>
-        r.generate.toString
-      case r: javalog.LogRecord =>
-        r.getParameters match {
-          case null =>
-            r.getMessage
-          case formatArgs =>
-            String.format(r.getMessage, formatArgs: _*)
-        }
-    }
-
-    if ((truncateAt > 0) && (message.length > truncateAt)) {
-      message = message.substring(0, truncateAt) + "..."
+      if (truncateAt <= 0 || m.length <= truncateAt) m
+      else (m take truncateAt) + "..."
     }
 
     // allow multi-line log entries to be atomic:
@@ -208,16 +195,11 @@ class GenericFormatter(format: String) extends Formatter {
   override def lineTerminator = "\n"
 
   override def formatPrefix(level: javalog.Level, date: String, name: String): String = {
+    // if it maps to one of our levels, use our name.
     val levelName = level match {
-      // if it maps to one of our levels, use our name.
       case Level(name, _) => name
-      case x: javalog.Level =>
-        Logger.levelsMap.get(x.intValue) match {
-          case None => "%03d".format(x.intValue)
-          case Some(level) => level.name
-        }
+      case x              => Logger.levelsMap get x.intValue map (_.name) getOrElse ("%03d" format x.intValue)
     }
-
     FORMAT.format(levelName, name, date)
   }
 }

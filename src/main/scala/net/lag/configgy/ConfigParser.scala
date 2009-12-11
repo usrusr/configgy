@@ -115,8 +115,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
   def parse(in: String): Unit = {
     parseAll(root, in) match {
       case Success(result, _) => result
-      case x @ Failure(msg, z) => throw new ParseException(x.toString)
-      case x @ Error(msg, _) => throw new ParseException(x.toString)
+      case x: NoSuccess       => throw new ParseException(x.toString)
     }
   }
 }

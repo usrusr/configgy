@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-// package net.lag
 package net
 
 package object lag {
-// package object configgy {
   // Applies a function to a value and then returns the value.
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 }

@@ -217,17 +217,16 @@ class Config extends ConfigMap {
     val nodes = root.getJmxNodes(packageName, "")
     val nodeNames = nodes map (_._1)
     // register any new nodes
-    nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
-      try {
-        mbs.registerMBean(bean, new jmx.ObjectName(name))
-      } catch {
-        case x: jmx.InstanceAlreadyExistsException =>
-          // happens in unit tests.
-      }
+    nodes filterNot (jmxNodes contains _) foreach { 
+      case (name, bean) =>
+        try mbs.registerMBean(bean, new jmx.ObjectName(name))
+        catch { case _: jmx.InstanceAlreadyExistsException => ()  } // happens in unit tests.
     }
+
     // unregister nodes that vanished
-    for (name <- jmxNodes ; if !(nodeNames contains name))
-      mbs.unregisterMBean(new jmx.ObjectName(name))
+    jmxNodes filterNot (nodeNames contains _) foreach { name =>
+      mbs unregisterMBean new jmx.ObjectName(name)
+    }
 
     jmxNodes = nodeNames
     jmxPackageName = packageName
@@ -251,8 +250,9 @@ class Config extends ConfigMap {
     }
 
     // throws exception if validation fails:
-    subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
-    subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
+    List(VALIDATE_PHASE, COMMIT_PHASE) foreach { p =>
+      subscribers.validate(keyList, Some(root), Some(newRoot), p)
+    }
 
     if (root.isMonitored) newRoot.setMonitored
     root.replaceWith(newRoot)

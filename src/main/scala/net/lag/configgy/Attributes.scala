@@ -22,11 +22,13 @@ import scala.collection.{immutable, mutable, Map}
 import scala.util.Sorting
 import net.lag.extensions._
 
-
-private[configgy] sealed abstract class Cell { def asString: String } 
-private[configgy] case class StringCell(value: String) extends Cell { def asString = value }
-private[configgy] case class AttributesCell(attr: Attributes) extends Cell { def asString = attr.toString }
-private[configgy] case class StringListCell(array: Array[String]) extends Cell { def asString = array.mkString("[", ",", "]") }
+private[configgy] object Attributes {
+  sealed abstract class Cell { def asString: String } 
+  case class StringCell(value: String) extends Cell { def asString = value }
+  case class AttributesCell(attr: Attributes) extends Cell { def asString = attr.toString }
+  case class StringListCell(array: Array[String]) extends Cell { def asString = array.mkString("[", ",", "]") }
+}
+import Attributes._
 
 /**
  * Actual implementation of ConfigMap.
@@ -39,6 +41,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   var inheritFrom: Option[ConfigMap] = None
 
   def keys: Iterator[String] = cells.keysIterator
+  
+  def isCompound(key: String) = key contains "."
   
   def inheritedFn[T](pf: PartialFunction[ConfigMap, T], default: T): T =
     if (inheritFrom.isDefined && pf.isDefinedAt(inheritFrom.get)) pf(inheritFrom.get)
@@ -75,7 +79,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       case Array(first, rest) =>
         (cells get first) match {
           case Some(AttributesCell(x))  => x lookupCell rest
-          case None                     => parentLookup(first)
+          case None                     => parentLookup(key)
           case _                        => None
         }
     }
@@ -98,22 +102,18 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
    * object, then an ConfigException will be thrown.
    */
   @throws(classOf[ConfigException])
-  private def recurse(key: String): Option[(Attributes, String)] = {
-    val elems = key.split("\\.", 2)
-    if (elems.length > 1) {
-      val attr = (cells.get(elems(0).toLowerCase) match {
-        case Some(AttributesCell(x)) => x
-        case Some(_) => throw new ConfigException("Illegal key " + key)
-        case None => createNested(elems(0))
-      })
-      attr.recurse(elems(1)) match {
-        case ret @ Some((a, b)) => ret
-        case None => Some((attr, elems(1)))
+  private def recurse(key: String): Option[(Attributes, String)] =      
+    if (isCompound(key)) {
+      val Array(first, rest) = key.split("\\.", 2)
+      val lcfirst = first.toLowerCase
+      val attr = (cells get lcfirst) match {
+        case Some(AttributesCell(x))  => x
+        case Some(_)                  => throw new ConfigException("Illegal key " + key)
+        case None                     => createNested(first)
       }
-    } else {
-      None
+      attr.recurse(rest) orElse Some((attr, rest))
     }
-  }
+    else None
 
   def replaceWith(newAttributes: Attributes): Unit = {
     // stash away subnodes and reinsert them.
@@ -121,8 +121,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
     cells.clear
     cells ++= newAttributes.cells
-    for ((key: String, cell) <- subnodes) {
-      newAttributes.cells.get(key) match {
+    for ((key: String, cell) <- (subnodes: @unchecked)) {
+      (newAttributes.cells get key) match {
         case Some(AttributesCell(newattr)) =>
           cell.attr.replaceWith(newattr)
           cells(key) = cell
@@ -160,7 +160,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
   def configMap(key: String): ConfigMap = makeAttributes(key)
 
-  private[configgy] def makeAttributes(key: String): Attributes = {
+  private[configgy] def makeAttributes(key: String): Attributes =
     if (key == "") this
     else recurse(key) match {
       case Some((attr, name)) => attr.makeAttributes(name)
@@ -170,13 +170,12 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
         case None => createNested(key)
       }
     }
-  }
 
   def getList(key: String): Seq[String] = {
     lookupCell(key) match {
-      case Some(StringListCell(x)) => x
-      case Some(StringCell(x)) => Array[String](x)
-      case _ => Array[String]()
+      case Some(StringListCell(x))  => x
+      case Some(StringCell(x))      => List(x)
+      case _                        => Nil
     }
   }
 
@@ -217,38 +216,28 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     }
   }
 
-  def contains(key: String): Boolean = {
+  def contains(key: String): Boolean =
     recurse(key) match {
       case Some((attr, name)) => attr.contains(name)
       case None => cells.contains(key.toLowerCase)
     }
-  }
 
-  def remove(key: String): Boolean = {
-    if (monitored) {
-      return config.deepRemove(name, key)
-    }
-
-    recurse(key) match {
+  def remove(key: String): Boolean =
+    if (monitored) config.deepRemove(name, key)
+    else recurse(key) match {
       case Some((attr, name)) => attr.remove(name)
       case None => (cells remove key.toLowerCase).isDefined
     }
-  }
 
-  def asMap: Map[String, String] = {
-    var ret = immutable.Map.empty[String, String]
-    for ((key, value) <- cells) {
-      value match {
-        case StringCell(x) => ret = ret.updated(key, x)
-        case StringListCell(x) => ret = ret.updated(key, x.mkString("[", ",", "]"))
-        case AttributesCell(x) =>
-          for ((k, v) <- x.asMap) {
-            ret = ret.updated(key + "." + k, v)
-          }
-      }
+  def asMap: Map[String, String] =
+    cells.foldLeft(immutable.Map.empty[String, String]) {
+      case (ret, (key, value))  => 
+        value match {
+          case StringCell(x)      => ret.updated(key, x)
+          case StringListCell(x)  => ret.updated(key, x.mkString("[", ",", "]"))
+          case AttributesCell(x)  => x.asMap.foldLeft(ret) { case (m, (k, v)) => m.updated(key + "." + k, v) }
+        }
     }
-    ret
-  }
 
   def toConfigString: String = {
     toConfigList().mkString("", "\n", "\n")
@@ -269,9 +258,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
         List(front) ::: xs ::: List("}")
     }
 
-  def subscribe(subscriber: Subscriber) = {
-    config.subscribe(name, subscriber)
-  }
+  def subscribe(subscriber: Subscriber) = config.subscribe(name, subscriber)
 
   // substitute "$(...)" strings with looked-up vars
   // (and find "\$" and replace them with "$")
@@ -284,11 +271,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     }
 
     s.regexSub(INTERPOLATE_RE) { m =>
-      if (m.matched == "\\$") {
-        "$"
-      } else {
-        lookup(m.group(1), List(this, root, EnvironmentAttributes))
-      }
+      if (m.matched == "\\$") "$"
+      else lookup(m.group(1), List(this, root, EnvironmentAttributes))
     }
   }
 
@@ -311,9 +295,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   protected[configgy] def isMonitored = monitored
 
   // make a deep copy of the Attributes tree.
-  def copy(): Attributes = {
-    copyTo(new Attributes(config, name))
-  }
+  def copy(): Attributes = copyTo(new Attributes(config, name))
 
   private def copyTo(attr: Attributes): Attributes = {
     inheritedFn({ case a: Attributes => a copyTo attr }, ())
@@ -326,28 +308,27 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     attr
   }
 
-  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] =
-    cells partialMap { 
-      case (key: String, StringCell(_))     => new jmx.MBeanAttributeInfo(key, "java.lang.String", "", true, true, false)
-      case (key: String, StringListCell(_)) => new jmx.MBeanAttributeInfo(key, "java.util.List", "", true, true, false)
-    } toArray
+  private def mkJMXMBean(key: String, clazz: String) = new jmx.MBeanAttributeInfo(key, clazz, "", true, true, false)
+  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = cells partialMap { 
+    case (key: String, StringCell(_))     => mkJMXMBean(key, "java.lang.String")
+    case (key: String, StringListCell(_)) => mkJMXMBean(key, "java.util.List")
+  } toArray
 
-  def asJmxDisplay(key: String): AnyRef = {
-    cells.get(key) match {
-      case Some(StringCell(x)) => x
-      case Some(StringListCell(x)) => java.util.Arrays.asList(x: _*)
-      case x => null
-    }
+  def asJmxDisplay(key: String): AnyRef = cells.get(key) match {
+    case Some(StringCell(x)) => x
+    case Some(StringListCell(x)) => java.util.Arrays.asList(x: _*)
+    case x => null
   }
 
   def getJmxNodes(prefix: String, name: String): List[(String, JmxWrapper)] = {
-    (prefix + ":type=Config,name=" + (if (name == "") "(root)" else name), new JmxWrapper(this)) :: cells.flatMap { item =>
-      val (key, value) = item
-      value match {
-        case AttributesCell(x) =>
-          x.getJmxNodes(prefix, if (name == "") key else (name + "." + key))
-        case _ => Nil
-      }
-    }.toList
+    def nameEmpty(yes: String, no: String) = if (name == "") yes else no
+    
+    val hd = "%s:type=Config,name=%s".format(prefix, nameEmpty("(root)", name))
+    val tl = cells.toList partialMap { 
+      case (key: String, AttributesCell(x)) =>
+        x.getJmxNodes(prefix, nameEmpty(key, name + "." + key))
+    } flatten
+    
+    (hd, new JmxWrapper(this)) :: tl
   }
 }

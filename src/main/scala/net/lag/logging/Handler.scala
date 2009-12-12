@@ -26,6 +26,7 @@ import net.lag.extensions._
  * and connects it with a formatter automatically.
  */
 abstract class Handler(_formatter: Formatter) extends javalog.Handler {
+  type FormatterType <: Formatter
 
   setFormatter(_formatter)
 
@@ -72,7 +73,7 @@ abstract class Handler(_formatter: Formatter) extends javalog.Handler {
   /**
    * Return the formatter associated with this log handler.
    */
-  def formatter = getFormatter.asInstanceOf[Formatter]
+  def formatter: FormatterType = getFormatter.asInstanceOf[FormatterType]
 
   override def toString = {
     "<%s level=%s utc=%s truncate=%d truncate_stack=%d>".format(getClass.getName, getLevel,

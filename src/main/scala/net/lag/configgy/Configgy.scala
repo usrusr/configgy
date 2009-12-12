@@ -56,13 +56,9 @@ object Configgy {
    * The base folder will be extracted from the filename and used as a base
    * path for resolving filenames given in "include" lines.
    */
-  def configure(filename: String): Unit = {
-    val n = filename.lastIndexOf('/')
-    if (n < 0) {
-      configure(new File(".").getCanonicalPath, filename)
-    } else {
-      configure(filename.substring(0, n), filename.substring(n + 1))
-    }
+  def configure(filename: String): Unit = filename.lastIndexOf('/') match {
+    case -1   => configure(new File(".").getCanonicalPath, filename)
+    case n    => configure(filename take n, filename drop (n + 1))
   }
 
   /**
@@ -71,33 +67,20 @@ object Configgy {
    * verify and commit the change (even if their nodes didn't actually
    * change).
    */
-  def reload: Unit = {
-    try {
-      _config.loadFile(previousPath, previousFilename)
-    } catch {
+  def reload: Unit =
+    try _config.loadFile(previousPath, previousFilename)
+    catch {
       case e: Throwable =>
         Logger.get.critical(e, "Failed to reload config file '%s/%s'", previousPath, previousFilename)
         throw e
     }
-  }
-
-  /**
-   * Configure the server by loading a config file from the given named
-   * resource inside this jar file. "include" lines will also operate
-   * on resource paths.
-   */
-  def configureFromResource(name: String) = {
-    Logger.reset
-    _config = Config.fromResource(name)
-    configLogging
-  }
 
   /**
    * Configure the server by loading a config file from the given named
    * resource inside this jar file, using a specific class loader.
    * "include" lines will also operate on resource paths.
    */
-  def configureFromResource(name: String, classLoader: ClassLoader) = {
+  def configureFromResource(name: String, classLoader: ClassLoader = ClassLoader.getSystemClassLoader) = {
     Logger.reset
     _config = Config.fromResource(name, classLoader)
     configLogging

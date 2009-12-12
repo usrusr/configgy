@@ -42,12 +42,9 @@ private class SubscriptionNode {
     val out = new StringBuilder("%d" format subscribers.size)
     if (map.size > 0) {
       out.append(" { ")
-      for (key <- map.keysIterator) {
-        out.append(key)
-        out.append("=")
-        out.append(map(key).toString)
-        out.append(" ")
-      }
+      for ((k, v) <- map)
+        out append "%s=%s ".format(k, v)
+
       out.append("}")
     }
     out.toString
@@ -116,12 +113,11 @@ class Config extends ConfigMap {
    */
   def load(data: String) = {
     var newRoot = new Attributes(this, "")
-    new ConfigParser(newRoot, importer).parse(data)
+    new ConfigParser(newRoot, importer) parse data
 
     if (root.isMonitored) {
       // throws exception if validation fails:
-      subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
-      subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
+      List(VALIDATE_PHASE, COMMIT_PHASE) foreach (p => subscribers.validate(Nil, Some(root), Some(newRoot), p))
     }
 
     if (root.isMonitored) newRoot.setMonitored
@@ -153,23 +149,21 @@ class Config extends ConfigMap {
     nextKey += 1
     var node = subscribers
     if (key ne null) {
-      for (segment <- key.split("\\.")) {
-        node = node.get(segment)
-      }
+      key.split("\\.") foreach (x => node = node get x)
+      // for (segment <- key.split("\\.")) {
+      //   node = node.get(segment)
+      // }
     }
     node.subscribers += subscriber
     subscriberKeys += Pair(subkey, (node, subscriber))
     new SubscriptionKey(this, subkey)
   }
 
-  private[configgy] def subscribe(key: String)(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {
+  private[configgy] def subscribe(key: String)(f: (Option[ConfigMap]) => Unit): SubscriptionKey =
     subscribe(key, new Subscriber {
-      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
-      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-        f(replacement)
-      }
+      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]) { }
+      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]) { f(replacement) }
     })
-  }
 
   def subscribe(subscriber: Subscriber): SubscriptionKey = subscribe(null: String, subscriber)
 
@@ -198,9 +192,11 @@ class Config extends ConfigMap {
    */
   def unregisterWithJmx() = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
-    for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
+    
+    jmxNodes foreach (name => mbs unregisterMBean new jmx.ObjectName(name))    
     jmxNodes = Nil
-    for (key <- jmxSubscriptionKey) unsubscribe(key)
+    
+    jmxSubscriptionKey foreach unsubscribe
     jmxSubscriptionKey = None
   }
 
@@ -244,19 +240,17 @@ class Config extends ConfigMap {
     val fullKey = if (name == "") (key) else (name + "." + key)
     val newRoot = root.copy
     val keyList = fullKey.split("\\.").toList
+    
+    operation(newRoot, fullKey) && {
+      // throws exception if validation fails:
+      List(VALIDATE_PHASE, COMMIT_PHASE) foreach { p =>
+        subscribers.validate(keyList, Some(root), Some(newRoot), p)
+      }
 
-    if (! operation(newRoot, fullKey)) {
-      return false
+      if (root.isMonitored) newRoot.setMonitored
+      root replaceWith newRoot
+      true
     }
-
-    // throws exception if validation fails:
-    List(VALIDATE_PHASE, COMMIT_PHASE) foreach { p =>
-      subscribers.validate(keyList, Some(root), Some(newRoot), p)
-    }
-
-    if (root.isMonitored) newRoot.setMonitored
-    root.replaceWith(newRoot)
-    true
   }
 
   private[configgy] def deepSet(name: String, key: String, value: String) = {
@@ -321,25 +315,16 @@ object Config {
   }
 
   /**
-   * Create a Config object from the given named resource inside this jar
-   * file, using the system class loader. "include" lines will also operate
-   * on resource paths.
-   */
-  def fromResource(name: String): Config = {
-    fromResource(name, ClassLoader.getSystemClassLoader)
-  }
-
-  /**
    * Create a Config object from a string containing a config file's contents.
    */
-  def fromString(data: String) = returning(new Config) { _ load data }
+  def fromString(data: String) = returning(new Config)(_ load data)
 
   /**
    * Create a Config object from the given named resource inside this jar
    * file, using a specific class loader. "include" lines will also operate
    * on resource paths.
    */
-  def fromResource(name: String, classLoader: ClassLoader): Config =
+  def fromResource(name: String, classLoader: ClassLoader = ClassLoader.getSystemClassLoader): Config =
     returning(new Config) { config =>
       try {
         config.importer = new ResourceImporter(classLoader)

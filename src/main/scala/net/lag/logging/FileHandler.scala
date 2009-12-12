@@ -95,13 +95,10 @@ class FileHandler(val filename: String, val policy: Policy, formatter: Formatter
 
   private def roll() = {
     stream.close()
-    val n = filename.lastIndexOf('.')
-    var newFilename = if (n > 0) {
-      filename.substring(0, n) + "-" + timeSuffix(new Date(openTime)) + filename.substring(n)
-    } else {
-      filename + "-" + timeSuffix(new Date(openTime))
-    }
-    new File(filename).renameTo(new File(newFilename))
+    val n = (filename lastIndexOf '.') match { case -1 => filename.length ; case x => x }
+    val newFilename = (filename take n) + "-" + timeSuffix(new Date(openTime)) + (filename drop n)
+    
+    new File(filename) renameTo new File(newFilename)
     openLog()
   }
 

@@ -22,7 +22,13 @@ import java.util.{Calendar, Date, logging => javalog}
 import scala.collection.Map
 import scala.collection.mutable
 import net.lag.extensions._
-import net.lag.configgy.{ConfigException, ConfigMap}
+import net.lag.configgy.{ ConfigException, ConfigMap }
+
+sealed abstract class Policy
+case object Never extends Policy
+case object Hourly extends Policy
+case object Daily extends Policy
+case class Weekly(dayOfWeek: Int) extends Policy
 
 
 // replace java's ridiculous log levels with the standard ones.
@@ -48,9 +54,7 @@ object Level {
   }
 }
 
-
 class LoggingException(reason: String) extends Exception(reason)
-
 
 private[logging] class LazyLogRecord(level: javalog.Level, messageGenerator: => AnyRef) extends javalog.LogRecord(level, "") {
   // for each logged line, generate this string only once, regardless of how many handlers there are:
@@ -213,15 +217,9 @@ object Logger {
   def ALL = Level.ALL
 
   // to force them to get loaded from class files:
-  root.setLevel(FATAL)
-  root.setLevel(CRITICAL)
-  root.setLevel(ERROR)
-  root.setLevel(WARNING)
-  root.setLevel(INFO)
-  root.setLevel(DEBUG)
-  root.setLevel(TRACE)
-  reset
+  List(FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE) foreach (root setLevel _)
 
+  reset
 
   /**
    * Return a map of log level values to the corresponding Level objects.
@@ -240,7 +238,7 @@ object Logger {
    */
   def reset() = {
     clearHandlers
-    javaRoot.addHandler(new ConsoleHandler(new FileFormatter))
+    javaRoot addHandler new ConsoleHandler(new FileFormatter)
   }
 
   /**
@@ -284,10 +282,7 @@ object Logger {
   /** An alias for `get()` */
   def apply() = get(2)
 
-  private def getForClassName(className: String) = get(
-    if (className endsWith "$") className dropRight 1
-    else className
-  )
+  private def getForClassName(className: String) = get(className stripSuffix "$")
 
   /**
    * Return a logger for the package of the class given.
@@ -301,15 +296,10 @@ object Logger {
    * Iterate the Logger objects that have been created.
    */
   def elements: Iterator[Logger] = {
+    import collection.JavaConversions._
     val manager = javalog.LogManager.getLogManager
-    val loggers = new mutable.Queue[Logger]
-    // why on earth did java use ENUMERATION here?!
-    val e = manager.getLoggerNames
-    while (e.hasMoreElements) {
-      val item = manager.getLogger(e.nextElement.asInstanceOf[String])
-      loggers += get(item.getName())
-    }
-    loggers.iterator
+    
+    manager.getLoggerNames map (x => get(manager getLogger x getName))
   }
 
   /**

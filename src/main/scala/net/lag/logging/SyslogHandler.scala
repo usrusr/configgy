@@ -21,6 +21,8 @@ import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress,
 import net.lag.extensions._
 
 class SyslogHandler(useIsoDateFormat: Boolean, server: String) extends Handler(new SyslogFormatter(useIsoDateFormat)) {
+  override type FormatterType = SyslogFormatter
+  
   private val socket = new DatagramSocket
   private[logging] val dest: SocketAddress = server.split(":", 2).toList match {
     case host :: port :: Nil => new InetSocketAddress(host, port.toInt)
@@ -30,8 +32,6 @@ class SyslogHandler(useIsoDateFormat: Boolean, server: String) extends Handler(n
 
   def flush() = { }
   def close() = { }
-
-  override def formatter = getFormatter.asInstanceOf[SyslogFormatter]
 
   def priority = formatter.priority
   def priority_=(priority: Int) = {

@@ -20,21 +20,17 @@ package configgy
 import java.io.File
 import java.lang.management.ManagementFactory
 import javax.{management => jmx}
-import scala.collection.{Map, Set}
-import scala.collection.{immutable, mutable}
+import scala.collection.{ Map, Set, immutable, mutable }
 import net.lag.extensions._
 import net.lag.logging.Logger
-
 
 private abstract class Phase
 private case object VALIDATE_PHASE extends Phase
 private case object COMMIT_PHASE extends Phase
 
-
 private class SubscriptionNode {
   val subscribers = new mutable.HashSet[Subscriber]
   val map = new mutable.HashMap[String, SubscriptionNode]
-  def mapIterator: Iterator[(String, SubscriptionNode)] = map.iterator
 
   def get(name: String): SubscriptionNode = map.getOrElseUpdate(name, new SubscriptionNode)
 
@@ -42,9 +38,7 @@ private class SubscriptionNode {
     val out = new StringBuilder("%d" format subscribers.size)
     if (map.size > 0) {
       out.append(" { ")
-      for ((k, v) <- map)
-        out append "%s=%s ".format(k, v)
-
+      map foreach { case (k, v) => out append "%s=%s ".format(k, v) }
       out.append("}")
     }
     out.toString
@@ -58,6 +52,7 @@ private class SubscriptionNode {
     }
 
     // first, call all subscribers for this node.
+    
     for (subscriber <- subscribers) {
       phase match {
         case VALIDATE_PHASE => subscriber.validate(current, replacement)
@@ -99,14 +94,12 @@ class Config extends ConfigMap {
   private var jmxPackageName: String = ""
   private var jmxSubscriptionKey: Option[SubscriptionKey] = None
 
-
   /**
    * Importer for resolving "include" lines when loading config files.
    * By default, it's a FilesystemImporter based on the current working
    * directory.
    */
   var importer: Importer = new FilesystemImporter(new File(".").getCanonicalPath)
-
 
   /**
    * Read config data from a string and use it to populate this object.
@@ -145,16 +138,12 @@ class Config extends ConfigMap {
 
   private[configgy] def subscribe(key: String, subscriber: Subscriber): SubscriptionKey = synchronized {
     root.setMonitored
-    var subkey = nextKey
+    val subkey = nextKey
     nextKey += 1
-    var node = subscribers
-    if (key ne null) {
-      key.split("\\.") foreach (x => node = node get x)
-      // for (segment <- key.split("\\.")) {
-      //   node = node.get(segment)
-      // }
-    }
+    
+    val node = dotSegments(key).foldLeft(subscribers)(_ get _)
     node.subscribers += subscriber
+    
     subscriberKeys += Pair(subkey, (node, subscriber))
     new SubscriptionKey(this, subkey)
   }
@@ -172,11 +161,10 @@ class Config extends ConfigMap {
   private[configgy] def unsubscribe(subkey: SubscriptionKey) = synchronized {
     subscriberKeys.get(subkey.id) match {
       case None => false
-      case Some((node, sub)) => {
+      case Some((node, sub)) =>
         node.subscribers -= sub
         subscriberKeys -= subkey.id
         true
-      }
     }
   }
 
@@ -226,7 +214,7 @@ class Config extends ConfigMap {
 
     jmxNodes = nodeNames
     jmxPackageName = packageName
-    if (jmxSubscriptionKey == None) {
+    if (jmxSubscriptionKey.isEmpty) {
       jmxSubscriptionKey = Some(subscribe { _ => registerWithJmx(packageName) })
     }
   }
@@ -237,14 +225,13 @@ class Config extends ConfigMap {
   @throws(classOf[ValidationException])
   private def deepChange(name: String, key: String, operation: (ConfigMap, String) => Boolean): Boolean = synchronized {
     // println("deepChange(%s, %s)".format(name, key))
-    val fullKey = if (name == "") (key) else (name + "." + key)
+    val fullKey = if (name == "") key else name + "." + key
     val newRoot = root.copy
-    val keyList = fullKey.split("\\.").toList
     
     operation(newRoot, fullKey) && {
       // throws exception if validation fails:
       List(VALIDATE_PHASE, COMMIT_PHASE) foreach { p =>
-        subscribers.validate(keyList, Some(root), Some(newRoot), p)
+        subscribers.validate(dotSegments(fullKey), Some(root), Some(newRoot), p)
       }
 
       if (root.isMonitored) newRoot.setMonitored

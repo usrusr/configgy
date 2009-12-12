@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.lag.configgy
+package net.lag
+package configgy
 
 import java.io.File
 import net.lag.logging.Logger
-
 
 /**
  * Main API entry point into the configgy library.
@@ -92,10 +92,9 @@ object Configgy {
     try {
       val attr = _config.getConfigMap("log")
       subscriber.commit(None, attr)
-      if (attr.isDefined) {
-        attr.get.subscribe(subscriber)
-      }
-    } catch {
+      attr foreach (_ subscribe subscriber)
+    }
+    catch {
       case e: Throwable =>
         log.critical(e, "Failed to configure logging")
         throw e
@@ -111,36 +110,25 @@ object Configgy {
     subscriber.commit(None, Some(config))
   }
 
-
   private class LoggingConfigSubscriber extends Subscriber {
-    @throws(classOf[ValidationException])
-    def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-      try {
-        for (logConfig <- replacement) {
-          Logger.configure(logConfig, true, true)
-          for (key <- logConfig.keys; block <- logConfig.getConfigMap(key)) {
-            Logger.configure(block, true, false)
-          }
-        }
-      } catch {
-        case e: Throwable => throw new ValidationException(e.toString)
-      }
+    private def runReplacement(logConfig: ConfigMap, validateOnly: Boolean) {
+      Logger.configure(logConfig, validateOnly, true)
+      for (key <- logConfig.keys; block <- logConfig getConfigMap key)
+        Logger.configure(block, validateOnly, false)
     }
+    
+    @throws(classOf[ValidationException])
+    def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit =
+      try replacement foreach (x => runReplacement(x, true))
+      catch { case e => throw new ValidationException(e.toString) }
 
-    def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
+    def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]) {
       Logger.reset
-
-      for (logConfig <- replacement) {
-        Logger.configure(logConfig, false, true)
-        for (key <- logConfig.keys; block <- logConfig.getConfigMap(key)) {
-          Logger.configure(block, false, false)
-        }
-      }
+      replacement foreach (x => runReplacement(x, false))
 
       val log = Logger.get("")
-      if (log.getLevel() eq null) {
-        log.setLevel(Logger.INFO)
-      }
+      if (log.getLevel() == null)
+        log setLevel Logger.INFO
     }
   }
 }

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package net.lag.logging
+package net.lag
+package logging
 
 import java.text.SimpleDateFormat
 import java.util.{Date, GregorianCalendar, TimeZone, logging => javalog}

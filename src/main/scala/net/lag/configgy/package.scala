@@ -19,4 +19,7 @@ package net
 package object lag {
   // Applies a function to a value and then returns the value.
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
+  
+  // Returns list of dotted segments.
+  def dotSegments(s: String): List[String] = if (s == null) Nil else s.split("\\.").toList
 }

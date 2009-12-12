@@ -85,10 +85,9 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
   def setLevel(level: javalog.Level) = wrapped.setLevel(level)
   def setUseParentHandlers(use: Boolean) = wrapped.setUseParentHandlers(use)
 
-  override def toString = {
+  override def toString =
     "<%s name='%s' level=%s handlers=%s use_parent=%s>".format(getClass.getName, name, getLevel(),
-      getHandlers().toList.mkString("[", ", ", "]"), if (getUseParentHandlers()) "true" else "false")
-  }
+      getHandlers().toList.mkString("[", ", ", "]"), getUseParentHandlers())
 
   /**
    * Log a message, with sprintf formatting, at the desired level.

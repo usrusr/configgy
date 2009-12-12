@@ -165,12 +165,12 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
     }
   }
 
-  override def toString = {
+  override def toString =
     ("<%s level=%s utc=%s truncate=%d truncate_stack=%d server=%s scribe_buffer_msec=%d " +
-     "scribe_backoff_msec=%d scribe_max_packet_size=%d>").format(getClass.getName, getLevel,
-      if (useUtc) "true" else "false", truncateAt, truncateStackTracesAt, server,
-      bufferTimeMilliseconds, connectBackoffMilliseconds, maxMessagesPerTransaction)
-  }
+     "scribe_backoff_msec=%d scribe_max_packet_size=%d>").format(
+       getClass.getName, getLevel, useUtc, truncateAt, truncateStackTracesAt, server,
+       bufferTimeMilliseconds, connectBackoffMilliseconds, maxMessagesPerTransaction
+    )
 
   val SCRIBE_PREFIX: Array[Byte] = Array(
     // version 1, call, "Log", reqid=0

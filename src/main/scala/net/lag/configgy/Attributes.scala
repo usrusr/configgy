@@ -41,7 +41,6 @@ import Attributes._
  * Stores items in Cell objects, and handles interpolation and key recursion.
  */
 private[configgy] class Attributes(val config: Config, val name: String) extends ConfigMap {
-
   private val cells = new mutable.HashMap[String, Cell]
   private var monitored = false
   var inheritFrom: Option[ConfigMap] = None

@@ -126,7 +126,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
 
     cells.clear
     cells ++= newAttributes.cells
-    for ((key: String, cell) <- (subnodes: @unchecked)) {
+    for ((key: String, cell) <- subnodes) {
       (newAttributes.cells get key) match {
         case Some(AttributesCell(newattr)) =>
           cell.attr.replaceWith(newattr)

@@ -105,7 +105,7 @@ class Config extends ConfigMap {
    * Read config data from a string and use it to populate this object.
    */
   def load(data: String) = {
-    var newRoot = new Attributes(this, "")
+    val newRoot = new Attributes(this, "")
     new ConfigParser(newRoot, importer) parse data
 
     if (root.isMonitored) {

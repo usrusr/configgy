@@ -17,9 +17,9 @@
   </publications>
   <dependencies>
     <!-- i guess scala-compiler.jar is needed for MainGenericRunner -->
-    <dependency org="org.scala-lang" name="scala-compiler" rev="2.8.0.Beta1-RC3"/>
-    <dependency org="org.scala-lang" name="scala-library" rev="2.8.0.Beta1-RC3" />
-    <dependency org="org.scala-tools.testing" name="specs" rev="1.6.1-2.8.0.Beta1-RC3" conf="test->*">
+    <dependency org="org.scala-lang" name="scala-compiler" rev="2.8.0.Beta1-RC6"/>
+    <dependency org="org.scala-lang" name="scala-library" rev="2.8.0.Beta1-RC6" />
+    <dependency org="org.scala-tools.testing" name="specs" rev="1.6.1-2.8.0.Beta1-RC6" conf="test->*">
       <exclude module="scalatest-1.0.1-for-scala" />
     </dependency>
     <dependency org="junit" name="junit" rev="4.5" conf="test->*" />

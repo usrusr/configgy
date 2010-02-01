@@ -331,6 +331,27 @@ trait ConfigMap {
    */
   def toConfigString: String
 
+  def copyInto(obj: AnyRef) {
+    val cls = obj.getClass
+    val methods = cls.getMethods().filter { method =>
+      method.getName().endsWith("_$eq") && method.getParameterTypes().size == 1
+    }.toList
+    keys.foreach { key =>
+      methods.filter { _.getName() == key + "_$eq" }.foreach { method =>
+        val expectedType = method.getParameterTypes().first.getCanonicalName
+        val param = expectedType match {
+          case "int" => getInt(key)
+          case "long" => getLong(key)
+          case "float" => getDouble(key).map { _.toFloat }
+          case "double" => getDouble(key)
+          case "boolean" => getBool(key)
+          case "java.lang.String" => getString(key)
+          case x => println(x); None // ignore for now
+        }
+        param.map { p => method.invoke(obj, p.asInstanceOf[Object]) }
+      }
+    }
+  }
 
   /**
    * If the requested key is present, return its value as a string. Otherwise, throw a

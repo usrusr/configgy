@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import scala.util.Sorting
+import net.lag.logging.{Level, Logger}
 import org.specs._
 
 
@@ -233,6 +234,8 @@ name = "Sparky"
     }
 
     "copyInto" in {
+      Logger.get("").setLevel(Level.OFF)
+
       val s = new Attributes(null, "")
       s("name") = "Sparky"
       s("age") = "10"

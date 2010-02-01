@@ -18,6 +18,7 @@ package net.lag.configgy
 
 import scala.collection.Map
 import scala.util.Sorting
+import net.lag.logging.Logger
 
 
 class ConfigException(reason: String) extends Exception(reason)
@@ -333,11 +334,16 @@ trait ConfigMap {
 
   def copyInto(obj: AnyRef) {
     val cls = obj.getClass
+    val log = Logger.get(cls)
     val methods = cls.getMethods().filter { method =>
       method.getName().endsWith("_$eq") && method.getParameterTypes().size == 1
     }.toList
     keys.foreach { key =>
-      methods.filter { _.getName() == key + "_$eq" }.foreach { method =>
+      val setters = methods.filter { _.getName() == key + "_$eq" }
+      if (setters.size == 0) {
+        log.warning("Ignoring config key '%s' which doesn't have a setter in class %s", key, cls)
+      }
+      setters.foreach { method =>
         val expectedType = method.getParameterTypes().first.getCanonicalName
         val param = expectedType match {
           case "int" => getInt(key)
@@ -346,7 +352,7 @@ trait ConfigMap {
           case "double" => getDouble(key)
           case "boolean" => getBool(key)
           case "java.lang.String" => getString(key)
-          case x => println(x); None // ignore for now
+          case _ => None // ignore for now
         }
         param.map { p => method.invoke(obj, p.asInstanceOf[Object]) }
       }

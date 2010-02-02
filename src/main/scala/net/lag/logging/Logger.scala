@@ -214,6 +214,7 @@ object Logger {
   def ALL = Level.ALL
 
   // to force them to get loaded from class files:
+  root.setLevel(OFF)
   root.setLevel(FATAL)
   root.setLevel(CRITICAL)
   root.setLevel(ERROR)

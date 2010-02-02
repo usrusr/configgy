@@ -19,6 +19,7 @@ package net.lag.configgy
 import _root_.java.io._
 import _root_.net.lag.logging.{FileHandler, Logger}
 import _root_.org.specs._
+import net.lag.TestHelper
 
 
 object RuntimeEnvironmentSpec extends Specification with TestHelper {

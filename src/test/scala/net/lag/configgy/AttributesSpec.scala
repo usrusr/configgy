@@ -17,6 +17,7 @@
 package net.lag.configgy
 
 import scala.util.Sorting
+import net.lag.logging.{Level, Logger}
 import org.specs._
 
 
@@ -230,6 +231,29 @@ muffy {
 name = "Sparky"
 """
       s.toConfigString mustEqual expected
+    }
+
+    "copyInto" in {
+      Logger.get("").setLevel(Level.OFF)
+
+      val s = new Attributes(null, "")
+      s("name") = "Sparky"
+      s("age") = "10"
+      s("unused") = "nothing"
+      s("longish") = "900"
+      s("boolish") = "true"
+      s("doublish") = "2.5"
+      s("floatish") = "8.75"
+
+      case class Person(var name: String, var age: Int, var weight: Int, var longish: Long)
+      val obj = new Person("", 0, 0, 0L)
+      s.copyInto(obj)
+      obj mustEqual new Person("Sparky", 10, 0, 900L)
+
+      case class Other(var boolish: Boolean, var doublish: Double, var floatish: Float)
+      val obj2 = new Other(false, 0.0, 0.0f)
+      s.copyInto(obj2)
+      obj2 mustEqual new Other(true, 2.5, 8.75f)
     }
   }
 }

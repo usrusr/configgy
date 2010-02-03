@@ -70,12 +70,14 @@ object AttributesSpec extends Specification {
       s("sleepy").toBoolean mustEqual true
     }
 
-    "case-normalize keys in get/set" in {
+    "case-preserve keys in get/set" in {
       val s = new Attributes(null, "")
       s("Name") = "Communist"
       s("AGE") = 8
-      s("naME") mustEqual "Communist"
-      s("age").toInt mustEqual 8
+      s("Name") mustEqual "Communist"
+      s("naME", "") mustEqual ""
+      s("age", 0) mustEqual 0
+      s("AGE") mustEqual "8"
     }
 
     "set compound values" in {

@@ -1,15 +1,17 @@
 <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
   <info organisation="net.lag"
     module="configgy"
-    revision="1.4.3"
+    revision="1.5"
     e:testclass="net.lag.TestRunner"
     e:buildpackage="net.lag.configgy"
-  />
+  >
+    <license name="Apache License, Version 2.0" url="http://www.apache.org/licenses/LICENSE-2.0.html" />
+  </info>
 
   <configurations>
     <conf name="bootstrap" visibility="private" description="load scala compiler and libraries" />
     <conf name="default" description="normal build" />
-    <conf name="test" visibility="private" description="build and run tests" />
+    <conf name="test" extends="default" visibility="private" description="build and run tests" />
   </configurations>
   <publications>
     <artifact />

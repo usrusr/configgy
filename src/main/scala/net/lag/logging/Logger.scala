@@ -298,7 +298,7 @@ object Logger {
     import collection.JavaConversions._
     val manager = javalog.LogManager.getLogManager
     
-    manager.getLoggerNames map (x => get(manager getLogger x getName))
+    manager.getLoggerNames map (manager getLogger _) filterNot (_ == null) map (x => get(x.getName))
   }
 
   /**

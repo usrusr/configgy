@@ -58,7 +58,7 @@ This is all you need to know to use the library:
     
     // read hostname and port:
     val config = Configgy.config
-    val hostname = config.get("hostname", "localhost")
+    val hostname = config.getString("hostname", "localhost")
     val port = config.getInt("port", 3000)
     
     // log an error:

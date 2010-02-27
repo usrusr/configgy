@@ -77,7 +77,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
    */
   private def lookupCell(key: String): Option[Cell] = {
     def parentLookup(k: String) = inheritedFn({ case a: Attributes => a lookupCell k }, None)
-    key.toLowerCase.split("\\.", 2) match {
+    key.split("\\.", 2) match {
       case Array(first)       =>
         (cells get first) orElse parentLookup(first)
         
@@ -110,8 +110,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   private def recurse(key: String): Option[(Attributes, String)] =      
     if (isCompound(key)) {
       val Array(first, rest) = key.split("\\.", 2)
-      val lcfirst = first.toLowerCase
-      val attr = (cells get lcfirst) match {
+      val attr = (cells get first) match {
         case Some(AttributesCell(x))  => x
         case Some(_)                  => throw new ConfigException("Illegal key " + key)
         case None                     => createNested(first)
@@ -144,7 +143,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     if (monitored)
       attr.setMonitored
       
-    cells += Pair(key.toLowerCase, new AttributesCell(attr))
+    cells += Pair(key, new AttributesCell(attr))
     attr
   }
 
@@ -188,9 +187,9 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     if (monitored) config.deepSet(name, key, value)
     else recurse(key) match {
       case Some((attr, name)) => attr.setString(name, value)
-      case None => (cells get key.toLowerCase) match {
+      case None => (cells get key) match {
         case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
-        case _ => cells.put(key.toLowerCase, new StringCell(value))
+        case _ => cells.put(key, new StringCell(value))
       }
     }
 
@@ -198,23 +197,22 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     if (monitored) config.deepSet(name, key, value)
     else recurse(key) match {
       case Some((attr, name)) => attr.setList(name, value)
-      case None => (cells get key.toLowerCase) match {
+      case None => (cells get key) match {
         case Some(AttributesCell(_)) => throw new ConfigException("Illegal key " + key)
-        case _ => cells.put(key.toLowerCase, new StringListCell(value.toArray))
+        case _ => cells.put(key, new StringListCell(value.toArray))
       }
     }
 
   def setConfigMap(key: String, value: ConfigMap): Unit = {
-    def lckey = key.toLowerCase
     def attrCopy = value.copy.asInstanceOf[Attributes]
     
     if (monitored) config.deepSet(name, key, value)
     else recurse(key) match {
       case Some((attr, name)) => attr.setConfigMap(name, value)
       case None =>
-        (cells get lckey) match {
+        (cells get key) match {
           case Some(AttributesCell(_)) | None =>
-            cells.put(lckey, new AttributesCell(attrCopy))
+            cells.put(key, new AttributesCell(attrCopy))
           case _ =>
             throw new ConfigException("Illegal key " + key)
         }
@@ -224,14 +222,14 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   def contains(key: String): Boolean =
     recurse(key) match {
       case Some((attr, name)) => attr.contains(name)
-      case None => cells.contains(key.toLowerCase)
+      case None => cells.contains(key)
     }
 
   def remove(key: String): Boolean =
     if (monitored) config.deepRemove(name, key)
     else recurse(key) match {
       case Some((attr, name)) => attr.remove(name)
-      case None => (cells remove key.toLowerCase).isDefined
+      case None => (cells remove key).isDefined
     }
 
   def asMap: Map[String, String] =

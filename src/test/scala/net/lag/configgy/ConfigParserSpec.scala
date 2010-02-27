@@ -308,7 +308,7 @@ object ConfigParserSpec extends Specification {
         "    useLess = 3\n" +
         "</daemon>\n"
       val exp =
-        "{: daemon={daemon: useless=\"3\" } }"
+        "{: daemon={daemon: useLess=\"3\" } }"
       val a = parse(data)
       a.toString mustEqual exp
       a.getString("daemon.useLess", "14") mustEqual "3"
@@ -336,7 +336,7 @@ object ConfigParserSpec extends Specification {
         "    </baseDat>\n" +
         "</daemon>\n"
       val exp =
-        "{: daemon={daemon: basedat={daemon.baseDat: ulimit_fd=\"32768\" } } }"
+        "{: daemon={daemon: baseDat={daemon.baseDat: ulimit_fd=\"32768\" } } }"
       val a = parse(data)
       a.toString mustEqual exp
       a.getString("daemon.baseDat.ulimit_fd", "14") mustEqual "32768"
@@ -396,9 +396,9 @@ object ConfigParserSpec extends Specification {
         "    someInt=1\n" +
         "</upp>\n"
       val exp =
-        "{: daemon={daemon: base-dat={daemon.base-dat: ulimit_fd=\"32768\" } useless=\"3\" } " +
+        "{: daemon={daemon: base-dat={daemon.base-dat: ulimit_fd=\"32768\" } useLess=\"3\" } " +
         "upp={upp (inherit=daemon.base-dat): alpha={upp.alpha (inherit=upp): name=\"alpha\" } " +
-        "beta={upp.beta (inherit=daemon): name=\"beta\" } someint=\"1\" uid=\"16\" } }"
+        "beta={upp.beta (inherit=daemon): name=\"beta\" } someInt=\"1\" uid=\"16\" } }"
       val a = parse(data)
       a.toString mustEqual exp
       a.getString("daemon.useLess", "14") mustEqual "3"
@@ -408,8 +408,8 @@ object ConfigParserSpec extends Specification {
       a.getString("upp.alpha.name", "") mustEqual "alpha"
       a.getString("upp.beta.name", "") mustEqual "beta"
       a.getString("upp.alpha.ulimit_fd", "") mustEqual "32768"
-      a.getString("upp.beta.useless", "") mustEqual "3"
-      a.getString("upp.alpha.useless", "") mustEqual ""
+      a.getString("upp.beta.useLess", "") mustEqual "3"
+      a.getString("upp.alpha.useLess", "") mustEqual ""
       a.getString("upp.beta.ulimit_fd", "") mustEqual ""
       a.getString("upp.someInt", "4") mustEqual "1"
     }

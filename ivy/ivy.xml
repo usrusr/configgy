@@ -13,10 +13,12 @@
     <conf name="default" description="normal build" />
     <conf name="test" extends="default" visibility="private" description="build and run tests" />
   </configurations>
+
   <publications>
     <artifact />
     <artifact type="pom" />
   </publications>
+
   <dependencies>
     <!-- i guess scala-compiler.jar is needed for MainGenericRunner -->
     <dependency org="org.scala-lang" name="scala-compiler" rev="2.7.7" />

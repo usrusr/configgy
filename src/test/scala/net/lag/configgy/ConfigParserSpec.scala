@@ -376,7 +376,7 @@ object ConfigParserSpec extends Specification {
       a.getString("upp.uid", "1") mustEqual "16"
     }
 
-   "handle a complex case" in {
+    "handle a complex case" in {
       val data =
         "<daemon>\n" +
         "    useLess = 3\n" +
@@ -412,6 +412,27 @@ object ConfigParserSpec extends Specification {
       a.getString("upp.alpha.useLess", "") mustEqual ""
       a.getString("upp.beta.ulimit_fd", "") mustEqual ""
       a.getString("upp.someInt", "4") mustEqual "1"
+    }
+
+    "inherit should apply explicitly" in {
+      val data =
+        "sanfrancisco {\n" +
+        "  beer {\n" +
+        "    racer5 = 10\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "atlanta (inherit=\"sanfrancisco\") {\n" +
+        "  beer (inherit=\"sanfrancisco.beer\") {\n" +
+        "    redbrick = 9\n" +
+        "  }\n" +
+        "}\n"
+      val a = parse(data)
+      a.configMap("sanfrancisco").inheritFrom mustEqual None
+      a.configMap("sanfrancisco.beer").inheritFrom mustEqual None
+      a.configMap("atlanta").inheritFrom.get.toString mustMatch "sanfrancisco.*"
+      a.configMap("atlanta.beer").inheritFrom.get.toString mustMatch "sanfrancisco\\.beer.*"
+      a.getString("sanfrancisco.beer.deathandtaxes.etc") mustEqual None
     }
   }
 }

@@ -87,7 +87,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
       cells.get(elems(0)) match {
         case Some(AttributesCell(x)) => x.lookupCell(elems(1))
         case None => inheritFrom match {
-          case Some(a: Attributes) => a.lookupCell(key)
+          case Some(a: Attributes) =>
+            a.lookupCell(key)
           case _ => None
         }
         case _ => None
@@ -161,7 +162,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     if (monitored) {
       attr.setMonitored
     }
-    cells += Pair(key, new AttributesCell(attr))
+    cells(key) = new AttributesCell(attr)
     attr
   }
 
@@ -180,19 +181,24 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     }
   }
 
-  def configMap(key: String): ConfigMap = makeAttributes(key)
+  def configMap(key: String): ConfigMap = makeAttributes(key, true)
 
-  private[configgy] def makeAttributes(key: String): Attributes = {
+  private[configgy] def makeAttributes(key: String): Attributes = makeAttributes(key, false)
+
+  private[configgy] def makeAttributes(key: String, withInherit: Boolean): Attributes = {
     if (key == "") {
       return this
     }
     recurse(key) match {
-      case Some((attr, name)) => attr.makeAttributes(name)
-      case None => lookupCell(key) match {
-        case Some(AttributesCell(x)) => x
-        case Some(_) => throw new ConfigException("Illegal key " + key)
-        case None => createNested(key)
-      }
+      case Some((attr, name)) =>
+        attr.makeAttributes(name, withInherit)
+      case None =>
+        val cell = if (withInherit) lookupCell(key) else cells.get(key)
+        cell match {
+          case Some(AttributesCell(x)) => x
+          case Some(_) => throw new ConfigException("Illegal key " + key)
+          case None => createNested(key)
+        }
     }
   }
 

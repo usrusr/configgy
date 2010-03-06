@@ -222,6 +222,7 @@ object Logger {
   root.setLevel(INFO)
   root.setLevel(DEBUG)
   root.setLevel(TRACE)
+  root.setLevel(ALL)
   reset
 
 

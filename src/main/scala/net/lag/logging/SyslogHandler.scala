@@ -50,9 +50,8 @@ class SyslogHandler(useIsoDateFormat: Boolean, server: String) extends Handler(n
       val packet = new DatagramPacket(data, data.length, dest)
       socket.send(packet)
     } catch {
-      case e => {
+      case e =>
         System.err.println(Formatter.formatStackTrace(e, 30).mkString("\n"))
-      }
     }
   }
 }

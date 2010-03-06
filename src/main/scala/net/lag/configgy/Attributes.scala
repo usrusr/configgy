@@ -142,8 +142,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     val attr = new Attributes(config, newKey)
     if (monitored)
       attr.setMonitored
-      
-    cells += Pair(key, new AttributesCell(attr))
+
+    cells(key) = new AttributesCell(attr)
     attr
   }
 
@@ -162,17 +162,21 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     }
   }
 
-  def configMap(key: String): ConfigMap = makeAttributes(key)
+  def configMap(key: String): ConfigMap = makeAttributes(key, true)
 
-  private[configgy] def makeAttributes(key: String): Attributes =
+  private[configgy] def makeAttributes(key: String): Attributes = makeAttributes(key, false)
+
+  private[configgy] def makeAttributes(key: String, withInherit: Boolean): Attributes =
     if (key == "") this
     else recurse(key) match {
-      case Some((attr, name)) => attr.makeAttributes(name)
-      case None => lookupCell(key) match {
-        case Some(AttributesCell(x)) => x
-        case Some(_) => throw new ConfigException("Illegal key " + key)
-        case None => createNested(key)
-      }
+      case Some((attr, name)) => attr.makeAttributes(name, withInherit)
+      case None => 
+        val cell = if (withInherit) lookupCell(key) else cells.get(key)
+        cell match {
+          case Some(AttributesCell(x)) => x
+          case Some(_) => throw new ConfigException("Illegal key " + key)
+          case None => createNested(key)
+        }
     }
 
   def getList(key: String): Seq[String] = {

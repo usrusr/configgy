@@ -37,7 +37,7 @@ class SyslogFormatter(useIsoDateFormat: Boolean) extends Formatter {
     case None => ""
     case Some(name) => name
   }
-  def serverName_=(name: String) = {
+  def serverName_=(name: String) {
     _serverName = Some(name)
   }
   def clearServerName = {

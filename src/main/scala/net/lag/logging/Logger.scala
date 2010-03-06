@@ -216,7 +216,7 @@ object Logger {
   def ALL = Level.ALL
 
   // to force them to get loaded from class files:
-  List(OFF, FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE) foreach (root setLevel _)
+  List(OFF, FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE, ALL) foreach (root setLevel _)
 
   reset
 

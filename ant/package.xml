@@ -68,7 +68,7 @@
     <ivy:makepom ivyfile="${basedir}/ivy/ivy.xml" pomfile="${dist.dir}/${jar.name}.pom">
       <mapping conf="*" scope="compile" />
       <mapping conf="bootstrap" scope="provided" />
-      <mapping conf="test" scope="provided" />
+      <mapping conf="test" scope="test" />
     </ivy:makepom>
     <ivy:deliver conf="*(public)" />
   </target>

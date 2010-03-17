@@ -6,6 +6,10 @@ Configgy is a library for handling config files and logging for a scala
 daemon. The idea is that it should be simple and straightforward, allowing
 you to plug it in and get started quickly.
 
+## About this fork:
+
+- primarily forked to implement exception chaining in ConfigParser (there's not much to consider about this)
+- also changed: escaping scala-y unicode escape sequences in paths and config files (this is probably a matter of taste)   
 
 ## Why?
 

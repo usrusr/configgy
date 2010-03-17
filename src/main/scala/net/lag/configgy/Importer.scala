@@ -51,10 +51,23 @@ trait Importer {
         out.append(buffer, 0, n)
       }
     }
-    out.toString
+     
+    Importer.escapeBackslashU(out) 
   }
 }
-
+object Importer {
+  private val unescapeFindWithin : scala.util.matching.Regex = ("""^((\\\\)*)\\"""+"u").r
+  private val unescapeFindStart : scala.util.matching.Regex = ("""([^\\](\\\\)*)\\"""+"u").r
+  /**
+   * on windows machines, "\"+"u" is commonly found in paths. There, the scala way of using unicode escapes 
+   * can easily do more harm than good. A configuration too should better not contain surprises like this and 
+   * this brute-force escaping is an effective, if unelegant way to get around this.
+   */
+  def escapeBackslashU(in:CharSequence) = {
+    unescapeFindStart.replaceFirstIn(in, """$1\\\\u""")
+    unescapeFindWithin.replaceAllIn(in, """$1\\\\u""")
+  }
+}
 
 /**
  * An Importer that looks for imported config files in the filesystem.
@@ -69,7 +82,7 @@ class FilesystemImporter(val baseFolder: String) extends Importer {
     try {
       streamToString(new FileInputStream(f))
     } catch {
-      case x => throw new ParseException(x.toString)
+      case x => throw new ParseException(x)
     }
   }
 }
@@ -88,7 +101,7 @@ class ResourceImporter(classLoader: ClassLoader) extends Importer {
       }
       streamToString(stream)
     } catch {
-      case x => throw new ParseException(x.toString)
+      case x => throw new ParseException(x)
     }
   }
 }

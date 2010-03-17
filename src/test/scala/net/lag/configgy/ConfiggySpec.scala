@@ -66,7 +66,7 @@ object ConfiggySpec extends Specification with TestHelper {
         root.getLevel.getName mustEqual "WARNING"
         root.getHandlers.length mustEqual 1
         root.getHandlers()(0).getLevel.getName mustEqual "WARNING"
-        root.getHandlers()(0).asInstanceOf[FileHandler].filename mustEqual(folderName + "/test.log")
+        net.lag.configgy.Importer.escapeBackslashU(root.getHandlers()(0).asInstanceOf[FileHandler].filename) mustEqual(folderName + "/test.log")
 
         // verify the logfile was configured and worked:
         // (reset forces the files to be flushed and closed.)

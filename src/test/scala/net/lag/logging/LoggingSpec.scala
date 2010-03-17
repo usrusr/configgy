@@ -360,6 +360,9 @@ object LoggingSpec extends Specification with TestHelper {
       log.addHandler(syslog)
       log.info("here's an info message with BSD time.")
       serverSocket.receive(p)
+      /**
+       * this assertion is likely to fail on non-english locales!
+       */
       new String(p.getData, 0, p.getLength) mustEqual "<14>Mar 29 05:53:16 raccoon.local whiskey: here's an info message with BSD time."
     }
 
@@ -382,7 +385,7 @@ object LoggingSpec extends Specification with TestHelper {
         log.getLevel mustEqual Level.DEBUG
         log.getHandlers.length mustEqual 1
         val handler = log.getHandlers()(0).asInstanceOf[FileHandler]
-        handler.filename mustEqual folderName + "/test.log"
+        net.lag.configgy.Importer.escapeBackslashU(handler.filename) mustEqual folderName + "/test.log"
         handler.append mustEqual false
         handler.formatter.formatPrefix(javalog.Level.WARNING, "10:55", "hello") mustEqual "WARNING 10:55 hello"
         log.name mustEqual "net.lag"

@@ -45,6 +45,7 @@ trait TestHelper {
     do {
       folder = new File(tempFolder, "scala-test-" + System.currentTimeMillis)
     } while (! folder.mkdir)
+
     _folderName.set(folder)
 
     try {
@@ -54,5 +55,5 @@ trait TestHelper {
     }
   }
 
-  def folderName = { _folderName.get.getPath }
+  def folderName = { _root_.net.lag.configgy.Importer.escapeBackslashU(_folderName.get.getPath) }
 }

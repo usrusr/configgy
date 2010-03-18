@@ -55,5 +55,5 @@ trait TestHelper {
     }
   }
 
-  def folderName = { _root_.net.lag.configgy.Importer.escapeBackslashU(_folderName.get.getPath) }
+  def folderName = { _folderName.get.getPath }
 }

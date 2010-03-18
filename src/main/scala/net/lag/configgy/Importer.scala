@@ -51,21 +51,23 @@ trait Importer {
         out.append(buffer, 0, n)
       }
     }
-     
-    Importer.escapeBackslashU(out) 
+    out.toString
   }
 }
 object Importer {
-  private val unescapeFindWithin : scala.util.matching.Regex = ("""^((\\\\)*)\\"""+"u").r
-  private val unescapeFindStart : scala.util.matching.Regex = ("""([^\\](\\\\)*)\\"""+"u").r
+  private val escapeFindStart : scala.util.matching.Regex = ("""^((\\\\)*)\\"""+"u").r
+  private val escapeFindWithin : scala.util.matching.Regex = ("""([^\\](\\\\)*)\\"""+"u").r
+
   /**
    * on windows machines, "\"+"u" is commonly found in paths. There, the scala way of using unicode escapes 
    * can easily do more harm than good. A configuration too should better not contain surprises like this and 
    * this brute-force escaping is an effective, if unelegant way to get around this.
+   * the escaping will be removed by the parser
    */
   def escapeBackslashU(in:CharSequence) = {
-    unescapeFindStart.replaceFirstIn(in, """$1\\\\u""")
-    unescapeFindWithin.replaceAllIn(in, """$1\\\\u""")
+    val in2 = escapeFindStart.replaceFirstIn(in, """$1\\\\u""")
+    val out = escapeFindWithin.replaceAllIn(in2, """$1\\\\u""")
+    out
   }
 }
 

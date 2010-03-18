@@ -134,8 +134,8 @@ class Config extends ConfigMap {
    */
   def load(data: String) = {
     var newRoot = new Attributes(this, "")
-    new ConfigParser(newRoot, importer).parse(data)
-
+    new ConfigParser(newRoot, importer).parse(Importer.escapeBackslashU(data))
+ 
     if (root.isMonitored) {
       // throws exception if validation fails:
       subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)

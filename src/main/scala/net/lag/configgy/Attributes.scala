@@ -40,7 +40,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   var inheritFrom: Option[ConfigMap] = None
 
 
-  def keys: Iterator[String] = cells.keys
+  def keys: Iterator[String] = cells.keysIterator
 
   override def toString() = {
     val buffer = new StringBuilder("{")

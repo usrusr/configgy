@@ -24,7 +24,7 @@ import _root_.net.lag.TestHelper
 import org.specs._
 
 
-object ConfigSpec extends Specification with TestHelper {
+class ConfigSpec extends Specification with TestHelper {
 
   class FakeSubscriber extends Subscriber {
     def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
@@ -170,12 +170,17 @@ object ConfigSpec extends Specification with TestHelper {
       }
     }
 
+    "load a test resource as a sanity check" in {
+      ClassLoader.getSystemClassLoader.getResource("happy.conf") mustNot beNull
+    }
+
     "include from a resource" in {
       /* kinda cheaty: we know the current folder is the project root,
        * so we can stuff something in build-test/ briefly to get it to
        * appear in the classpath.
        */
-      val tempFilename = new File(new File(".").getAbsolutePath, "target/test-classes/happy.conf")
+      val tempFilename = new File(new File(".").getAbsolutePath, "target/scala_2.7.7/resources/net/lag/configgy/happy.conf")
+
       try {
         val data1 = "commie = 501\n"
         val f1 = new FileOutputStream(tempFilename)

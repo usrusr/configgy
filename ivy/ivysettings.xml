@@ -6,6 +6,7 @@
         <artifact pattern="${basedir}/libs/[artifact]-[revision].[ext]" />
       </filesystem>
 
+      <ibiblio name="testing.scala-tools.org" m2compatible="true" root="http://scala-tools.org/repo-releases/" />
       <ibiblio name="scala-tools.org" m2compatible="true" root="http://scala-tools.org/repo-releases/" />
       <ibiblio name="maven2" m2compatible="true" usepoms="false" />
       <ibiblio name="specs-extra" m2compatible="true" root="http://specs.googlecode.com/svn/maven2/" />

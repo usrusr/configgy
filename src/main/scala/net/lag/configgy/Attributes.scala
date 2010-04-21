@@ -296,7 +296,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   protected[configgy] def setMonitored: Unit = 
     if (!monitored) {
       monitored = true
-      cells.valuesIterator partialMap { case AttributesCell(x) => x.setMonitored }
+      cells.valuesIterator collect { case AttributesCell(x) => x.setMonitored }
     }
 
   protected[configgy] def isMonitored = monitored
@@ -316,7 +316,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   }
 
   private def mkJMXMBean(key: String, clazz: String) = new jmx.MBeanAttributeInfo(key, clazz, "", true, true, false)
-  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = cells partialMap { 
+  def asJmxAttributes(): Array[jmx.MBeanAttributeInfo] = cells collect { 
     case (key: String, StringCell(_))     => mkJMXMBean(key, "java.lang.String")
     case (key: String, StringListCell(_)) => mkJMXMBean(key, "java.util.List")
   } toArray
@@ -331,7 +331,7 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
     def nameEmpty(yes: String, no: String) = if (name == "") yes else no
     
     val hd = "%s:type=Config,name=%s".format(prefix, nameEmpty("(root)", name))
-    val tl = cells.toList partialMap { 
+    val tl = cells.toList collect { 
       case (key: String, AttributesCell(x)) =>
         x.getJmxNodes(prefix, nameEmpty(key, name + "." + key))
     } flatten

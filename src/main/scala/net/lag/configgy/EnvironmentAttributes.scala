@@ -31,7 +31,7 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   // java.util.Hashtable[Object, Object] and not
   // java.util.Hashtable[String, String]
   private def getSystemProperties(): mutable.HashMap[String,String] =
-    mutable.HashMap(JavaConversions.asMap(System.getProperties()).toList partialMap { case (k: String, v: String) => (k, v) } : _*)
+    mutable.HashMap(JavaConversions.asMap(System.getProperties()).toList collect { case (k: String, v: String) => (k, v) } : _*)
 
   def getString(key: String): Option[String] =
     (getSystemProperties() get key) orElse (env get key)

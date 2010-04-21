@@ -60,7 +60,7 @@ class RuntimeEnvironment(cls: Class[_]) {
   lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
     val cps = System.getProperty("java.class.path") split System.getProperty("path.separator")
-    cps partialMap { case pattern(path)  => new File(path).getCanonicalPath } headOption
+    cps collect { case pattern(path)  => new File(path).getCanonicalPath } headOption
   }
 
   /**

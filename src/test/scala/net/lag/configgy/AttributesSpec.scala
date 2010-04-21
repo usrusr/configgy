@@ -149,7 +149,7 @@ class AttributesSpec extends Specification {
       val map = s.asMap
 
       // turn it into a sorted list, so we get a deterministic answer
-      val keyList = map.keys.toList.toArray
+      val keyList = map.keysIterator.toList.toArray
       Sorting.quickSort(keyList)
       (for (k <- keyList) yield (k + "=" + map(k))).mkString("{ ", ", ", " }") mustEqual
         "{ age=8, diet.food=Meow Mix, diet.liquid=water, disposition=fighter, name=Communist }"

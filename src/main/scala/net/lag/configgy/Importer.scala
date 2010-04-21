@@ -16,7 +16,7 @@
 
 package net.lag.configgy
 
-import java.io.{BufferedReader, File, FileInputStream, InputStream, InputStreamReader}
+import java.io.{ BufferedReader, File, FileInputStream, InputStream, InputStreamReader }
 
 
 /**
@@ -30,8 +30,8 @@ trait Importer {
    */
   @throws(classOf[ParseException])
   def importFile(filename: String): String
-
-  private val BUFFER_SIZE = 8192
+  
+  protected def fail(msg: Any): Nothing = throw new ParseException(msg.toString)
 
   /**
    * Exhaustively reads an InputStream and converts it into a String (using
@@ -41,6 +41,7 @@ trait Importer {
    * No exceptions are caught!
    */
   protected def streamToString(in: InputStream): String = {
+    val BUFFER_SIZE = 8192
     val reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))
     val buffer = new Array[Char](BUFFER_SIZE)
     val out = new StringBuilder
@@ -48,7 +49,7 @@ trait Importer {
     while (n >= 0) {
       n = reader.read(buffer, 0, buffer.length)
       if (n >= 0) {
-        out.append(buffer, 0, n)
+        out.appendAll(buffer, 0, n)
       }
     }
     out.toString
@@ -61,17 +62,15 @@ trait Importer {
  * This is the default importer.
  */
 class FilesystemImporter(val baseFolder: String) extends Importer {
-  def importFile(filename: String): String = {
-    var f = new File(filename)
-    if (! f.isAbsolute) {
-      f = new File(baseFolder, filename)
-    }
-    try {
-      streamToString(new FileInputStream(f))
-    } catch {
-      case x => throw new ParseException(x.toString)
-    }
+  private def toAbsolute(name: String) = {
+    val f = new File(name)
+    if (f.isAbsolute) f
+    else new File(baseFolder, name)
   }
+  
+  def importFile(filename: String): String =
+    try streamToString(new FileInputStream(toAbsolute(filename)))
+    catch { case x => fail(x) }
 }
 
 
@@ -80,15 +79,10 @@ class FilesystemImporter(val baseFolder: String) extends Importer {
  * of the system class loader (usually the jar used to launch this app).
  */
 class ResourceImporter(classLoader: ClassLoader) extends Importer {
-  def importFile(filename: String): String = {
-    try {
-      val stream = classLoader.getResourceAsStream(filename)
-      if (stream eq null) {
-        throw new ParseException("Can't find resource: " + filename)
-      }
-      streamToString(stream)
-    } catch {
-      case x => throw new ParseException(x.toString)
-    }
-  }
+  def importFile(filename: String) =
+    try (classLoader.getResourceAsStream(filename) match {
+      case null   => fail("Can't find resource: " + filename)
+      case stream => streamToString(stream)
+    })
+    catch { case x => fail(x) }
 }

@@ -25,21 +25,17 @@ import _root_.net.lag.extensions._
 import net.lag.TestHelper
 
 object Crazy {
-  def cycle(n: Int): Unit = {
-    if (n == 0) {
-      throw new Exception("Aie!")
-    } else {
+  def cycle(n: Int) {
+    if (n == 0) throw new Exception("Aie!")
+    else {
       cycle(n - 1)
       Logger.get("").trace("nothing")
     }
   }
 
-  def cycle2(n: Int): Unit = {
-    try {
-      cycle(n)
-    } catch {
-      case t: Throwable => throw new Exception("grrrr", t)
-    }
+  def cycle2(n: Int) {
+    try cycle(n)
+    catch { case t => throw new Exception("grrrr", t) }
   }
 }
 
@@ -62,7 +58,7 @@ class TimeWarpingSyslogHandler(useIsoDateFormat: Boolean, server: String) extend
     super.publish(record)
   }
 
-  getFormatter.asInstanceOf[SyslogFormatter].hostname = "raccoon.local"
+  formatter.hostname = "raccoon.local"
 }
 
 

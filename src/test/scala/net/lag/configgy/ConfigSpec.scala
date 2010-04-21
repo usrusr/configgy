@@ -42,7 +42,7 @@ class ConfigSpec extends Specification with TestHelper {
       used = true
       savedCurrent = current match {
         case None => None
-        case Some(x) => Some(x.asInstanceOf[Attributes].copy)
+        case Some(x: Attributes) => Some(x.copy)
       }
       savedReplacement = replacement
     }

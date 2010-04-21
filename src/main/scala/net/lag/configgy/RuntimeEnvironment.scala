@@ -38,16 +38,16 @@ import net.lag.extensions._
 class RuntimeEnvironment(cls: Class[_]) {
   // load build info, if present.
   private var buildProperties = new Properties
-  try {
-    buildProperties.load(cls.getResource("build.properties").openStream)
-  } catch {
-    case _ =>
-  }
+  try buildProperties load cls.getResource("build.properties").openStream
+  catch { case _: Exception => () }
+  
+  def getProp(key: String, default: String = "unknown") = buildProperties.getProperty(key, default)
 
-  val jarName = buildProperties.getProperty("name", "unknown")
-  val jarVersion = buildProperties.getProperty("version", "0.0")
-  val jarBuild = buildProperties.getProperty("build_name", "unknown")
-  val jarBuildRevision = buildProperties.getProperty("build_revision", "unknown")
+  val jarName = getProp("name")
+  val jarVersion = getProp("version", "0.0")
+  val jarBuild = getProp("build_name")
+  val jarBuildRevision = getProp("build_revision")
+  
   val stageName = System.getProperty("stage", "production")
   val savedOverrides = new mutable.HashMap[String, String]
 
@@ -59,12 +59,8 @@ class RuntimeEnvironment(cls: Class[_]) {
    */
   lazy val jarPath: Option[String] = {
     val pattern = ("(.*?)" + jarName + "-" + jarVersion + "\\.jar$").r
-    (System.getProperty("java.class.path") split System.getProperty("path.separator")).map { elem =>
-      elem match {
-        case pattern(path) => Some(new File(path).getCanonicalPath)
-        case _ => None
-      }
-    }.toSeq.flatten.headOption
+    val cps = System.getProperty("java.class.path") split System.getProperty("path.separator")
+    cps partialMap { case pattern(path)  => new File(path).getCanonicalPath } headOption
   }
 
   /**
@@ -106,12 +102,15 @@ class RuntimeEnvironment(cls: Class[_]) {
   }
 
   private def help = {
-    println
-    println("%s %s (%s)".format(jarName, jarVersion, jarBuild))
-    println("options:")
-    println("    -f <filename>")
-    println("        load config file (default: %s)".format(configFilename))
-    println
+    println("""|
+      |%s %s (%s)
+      |options:
+      |    -f <filename>
+      |        load config file (default: %s)
+      |""".stripMargin.format(
+        jarName, jarVersion, jarBuild, configFilename
+      )
+    )
     System.exit(0)
   }
 

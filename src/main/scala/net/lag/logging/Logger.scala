@@ -14,24 +14,31 @@
  * limitations under the License.
  */
 
-package net.lag.logging
+package net.lag
+package logging
 
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date, logging => javalog}
 import scala.collection.Map
 import scala.collection.mutable
 import net.lag.extensions._
-import net.lag.configgy.{ConfigException, ConfigMap}
+import net.lag.configgy.{ ConfigException, ConfigMap }
+
+sealed abstract class Policy
+case object Never extends Policy
+case object Hourly extends Policy
+case object Daily extends Policy
+case class Weekly(dayOfWeek: Int) extends Policy
 
 
 // replace java's ridiculous log levels with the standard ones.
-sealed case class Level(name: String, value: Int) extends javalog.Level(name, value) {
+sealed abstract class Level(val name: String, val value: Int) extends javalog.Level(name, value) {
   Logger.levelNamesMap(name) = this
   Logger.levelsMap(value) = this
 }
 
 object Level {
-  case object OFF extends Level("OFF", Math.MAX_INT)
+  case object OFF extends Level("OFF", Int.MaxValue)
   case object FATAL extends Level("FATAL", 1000)
   case object CRITICAL extends Level("CRITICAL", 970)
   case object ERROR extends Level("ERROR", 930)
@@ -39,25 +46,23 @@ object Level {
   case object INFO extends Level("INFO", 800)
   case object DEBUG extends Level("DEBUG", 500)
   case object TRACE extends Level("TRACE", 400)
-  case object ALL extends Level("ALL", Math.MIN_INT)
+  case object ALL extends Level("ALL", Int.MinValue)
+  
+  def unapply(x: Any) = x match {
+    case x: Level => Some((x.name, x.value))
+    case _        => None
+  }
 }
 
-
 class LoggingException(reason: String) extends Exception(reason)
-
 
 private[logging] class LazyLogRecord(level: javalog.Level, messageGenerator: => AnyRef) extends javalog.LogRecord(level, "") {
   // for each logged line, generate this string only once, regardless of how many handlers there are:
   var cached: Option[AnyRef] = None
 
-  def generate = {
-    cached match {
-      case Some(value) =>
-        value
-      case None =>
-        cached = Some(messageGenerator)
-        cached.get
-    }
+  def generate = cached getOrElse {
+    cached = Some(messageGenerator)
+    cached.get
   }
 }
 
@@ -80,34 +85,32 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
   def setLevel(level: javalog.Level) = wrapped.setLevel(level)
   def setUseParentHandlers(use: Boolean) = wrapped.setUseParentHandlers(use)
 
-  override def toString = {
+  override def toString =
     "<%s name='%s' level=%s handlers=%s use_parent=%s>".format(getClass.getName, name, getLevel(),
-      getHandlers().toList.mkString("[", ", ", "]"), if (getUseParentHandlers()) "true" else "false")
-  }
+      getHandlers().toList.mkString("[", ", ", "]"), getUseParentHandlers())
 
   /**
    * Log a message, with sprintf formatting, at the desired level.
    */
   def log(level: Level, msg: String, items: Any*): Unit = log(level, null: Throwable, msg, items: _*)
+  
+  def isLoggableLevel(level: Level) = getLevel match {
+    case null       => true
+    case threshold  => level.intValue >= threshold.intValue
+  }
 
   /**
    * Log a message, with sprintf formatting, at the desired level, and
    * attach an exception and stack trace.
    */
-  def log(level: Level, thrown: Throwable, message: String, items: Any*): Unit = {
-    val myLevel = getLevel
-    if ((myLevel eq null) || (level.intValue >= myLevel.intValue)) {
+  def log(level: Level, thrown: Throwable, message: String, items: Any*) =
+    if (isLoggableLevel(level)) {
       val record = new javalog.LogRecord(level, message)
-      if (items.size > 0) {
-        record.setParameters(items.toArray[Any].asInstanceOf[Array[AnyRef]])
-      }
-      record.setLoggerName(wrapped.getName)
-      if (thrown ne null) {
-        record.setThrown(thrown)
-      }
-      wrapped.log(record)
+      if (items.nonEmpty)
+        record setParameters items.toArray.asInstanceOf[Array[AnyRef]]
+      
+      finishLogRecord(record, thrown)
     }
-  }
 
   // convenience methods:
   def fatal(msg: String, items: Any*) = log(Level.FATAL, msg, items: _*)
@@ -129,23 +132,23 @@ class Logger private(val name: String, private val wrapped: javalog.Logger) {
    * Log a message, with lazy (call-by-name) computation of the message,
    * at the desired level.
    */
-  def logLazy(level: Level, message: => AnyRef): Unit = logLazy(level, null: Throwable, message)
+  def logLazy(level: Level, message: => AnyRef): Unit = logLazy(level, null, message)
 
   /**
    * Log a message, with lazy (call-by-name) computation of the message,
    * and attach an exception and stack trace.
    */
-  def logLazy(level: Level, thrown: Throwable, message: => AnyRef): Unit = {
-    val myLevel = getLevel
-    if ((myLevel eq null) || (level.intValue >= myLevel.intValue)) {
-      val record = new LazyLogRecord(level, message)
-      record.setLoggerName(wrapped.getName)
-      if (thrown ne null) {
-        record.setThrown(thrown)
-      }
-      wrapped.log(record)
-    }
-  }
+  def logLazy(level: Level, thrown: Throwable, message: => AnyRef) =
+    if (isLoggableLevel(level))
+      finishLogRecord(new LazyLogRecord(level, message), thrown)
+  
+  private def finishLogRecord(record: javalog.LogRecord, thrown: Throwable) {
+    record setLoggerName wrapped.getName
+    if (thrown != null)
+      record setThrown thrown
+    
+    wrapped log record
+  } 
 
   // convenience methods:
   def ifFatal(message: => AnyRef) = logLazy(Level.FATAL, message)
@@ -176,7 +179,6 @@ object Logger {
 
   // clear out some cruft from the java root logger.
   private val javaRoot = javalog.Logger.getLogger("")
-
 
   // ----- convenience methods:
 
@@ -214,17 +216,9 @@ object Logger {
   def ALL = Level.ALL
 
   // to force them to get loaded from class files:
-  root.setLevel(OFF)
-  root.setLevel(FATAL)
-  root.setLevel(CRITICAL)
-  root.setLevel(ERROR)
-  root.setLevel(WARNING)
-  root.setLevel(INFO)
-  root.setLevel(DEBUG)
-  root.setLevel(TRACE)
-  root.setLevel(ALL)
-  reset
+  List(OFF, FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE, ALL) foreach (root setLevel _)
 
+  reset
 
   /**
    * Return a map of log level values to the corresponding Level objects.
@@ -243,52 +237,38 @@ object Logger {
    */
   def reset() = {
     clearHandlers
-    javaRoot.addHandler(new ConsoleHandler(new FileFormatter))
+    javaRoot addHandler new ConsoleHandler(new FileFormatter)
   }
 
   /**
    * Remove all existing log handlers from all existing loggers.
    */
-  def clearHandlers() = {
+  def clearHandlers() =
     for (logger <- elements) {
       for (handler <- logger.getHandlers) {
-        try {
-          handler.close()
-        } catch { case _ => () }
-        logger.removeHandler(handler)
+        try handler.close()
+        catch { case _ => () }
+        logger removeHandler handler
       }
-      logger.setLevel(null)
+      logger setLevel null
     }
-  }
 
   /**
    * Return a logger for the given package name. If one doesn't already
    * exist, a new logger will be created and returned.
    */
-  def get(name: String): Logger = {
-    loggersCache.get(name) match {
-      case Some(logger) =>
-        logger
-      case None =>
-        val manager = javalog.LogManager.getLogManager
-        val logger = manager.getLogger(name) match {
-          case null =>
-            val javaLogger = javalog.Logger.getLogger(name)
-            manager.addLogger(javaLogger)
-            new Logger(name, javaLogger)
-          case x: javalog.Logger =>
-            new Logger(name, x)
-        }
-        logger.setUseParentHandlers(true)
-        loggersCache.put(name, logger)
-        logger
-    }
-  }
+  def get(name: String): Logger = loggersCache.getOrElseUpdate(name, {
+    def manager = javalog.LogManager.getLogManager
+    def newLogger = returning(javalog.Logger getLogger name)(manager addLogger _)
+    
+    returning(new Logger(name, Option(manager getLogger name) getOrElse newLogger))(_ setUseParentHandlers true)
+  })
 
   /** An alias for `get(name)` */
   def apply(name: String) = get(name)
 
-  private def get(depth: Int): Logger = getForClassName(new Throwable().getStackTrace()(depth).getClassName)
+  private def get(depth: Int): Logger =
+    getForClassName(new Throwable().getStackTrace()(depth).getClassName)
 
   /**
    * Return a logger for the class name of the class/object that called
@@ -301,13 +281,7 @@ object Logger {
   /** An alias for `get()` */
   def apply() = get(2)
 
-  private def getForClassName(className: String) = {
-    if (className.endsWith("$")) {
-      get(className.substring(0, className.length - 1))
-    } else {
-      get(className)
-    }
-  }
+  private def getForClassName(className: String) = get(className stripSuffix "$")
 
   /**
    * Return a logger for the package of the class given.
@@ -321,15 +295,10 @@ object Logger {
    * Iterate the Logger objects that have been created.
    */
   def elements: Iterator[Logger] = {
+    import collection.JavaConversions._
     val manager = javalog.LogManager.getLogManager
-    val loggers = new mutable.Queue[Logger]
-    // why on earth did java use ENUMERATION here?!
-    val e = manager.getLoggerNames
-    while (e.hasMoreElements) {
-      val item = manager.getLogger(e.nextElement.asInstanceOf[String])
-      if (item ne null) loggers += get(item.getName)
-    }
-    loggers.elements
+    
+    manager.getLoggerNames map (manager getLogger _) filterNot (_ == null) map (x => get(x.getName))
   }
 
   /**
@@ -355,31 +324,25 @@ object Logger {
                        "scribe_buffer_msec", "scribe_backoff_msec",
                        "scribe_max_packet_size", "scribe_category",
                        "scribe_max_buffer")
-    var forbidden = config.keys.filter(x => !(allowed contains x)).toList
-    if (allowNestedBlocks) {
-      forbidden = forbidden.filter(x => !config.getConfigMap(x).isDefined)
-    }
-    if (forbidden.length > 0) {
+    var forbidden = config.keys.toList filterNot (allowed contains _)
+    if (allowNestedBlocks)
+      forbidden = forbidden filter (x => (config getConfigMap x).isEmpty)
+
+    if (forbidden.nonEmpty)
       throw new LoggingException("Unknown logging config attribute(s): " + forbidden.mkString(", "))
-    }
 
     val logger = Logger.get(config.getString("node", ""))
-    if (!validateOnly && allowNestedBlocks) {
-      for (handler <- logger.getHandlers) {
-        logger.removeHandler(handler)
-      }
-    }
+    if (!validateOnly && allowNestedBlocks)
+      logger.getHandlers foreach (logger removeHandler _)
 
     val formatter = config.getString("prefix_format") match {
       case None => new FileFormatter
       case Some(format) => new GenericFormatter(format)
     }
 
-    var handlers: List[Handler] = Nil
-
-    if (config.getBool("console", false)) {
-      handlers = new ConsoleHandler(formatter) :: handlers
-    }
+    var handlers: List[Handler] =
+      if (config.getBool("console", false)) List(new ConsoleHandler(formatter))
+      else Nil
 
     for (hostname <- config.getString("syslog_host")) {
       val useIsoDateFormat = config.getBool("syslog_use_iso_date_format", true)
@@ -424,16 +387,13 @@ object Logger {
     /* if they didn't specify a level, use "null", which is a secret
      * signal to javalog to use the parent logger's level. this is the
      * usual desired behavior, but not really documented anywhere. sigh.
-     */
-    val level = config.getString("level").map { levelName =>
-      levelNamesMap.get(levelName.toUpperCase) match {
-        case Some(x) => x
-        case None => throw new LoggingException("Unknown log level: " + levelName)
-      }
+     */    
+    val level = (config getString "level") map { levelName =>
+      levelNamesMap.getOrElse(levelName.toUpperCase, throw new LoggingException("Unknown log level: " + levelName))
     }
 
     for (handler <- handlers) {
-      level.map { handler.setLevel(_) }
+      level foreach (handler setLevel _)
       handler.useUtc = config.getBool("utc", false)
       handler.truncateAt = config.getInt("truncate", 0)
       handler.truncateStackTracesAt = config.getInt("truncate_stack_traces", 30)
@@ -445,11 +405,7 @@ object Logger {
 
     if (! validateOnly) {
       logger.setUseParentHandlers(config.getBool("use_parents", true))
-      level.foreach { level =>
-        if (logger.getLevel() eq null) {
-          logger.setLevel(level)
-        }
-      }
+      level foreach (l => if (logger.getLevel == null) logger setLevel l)
     }
 
     logger

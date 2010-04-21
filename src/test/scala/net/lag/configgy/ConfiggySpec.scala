@@ -21,7 +21,7 @@ import _root_.net.lag.logging.{FileHandler, Logger}
 import _root_.org.specs._
 import net.lag.TestHelper
 
-object ConfiggySpec extends Specification with TestHelper {
+class ConfiggySpec extends Specification with TestHelper {
 
   private def writeConfigFile(filename: String, data: String) = {
     val f = new FileOutputStream(folderName + "/" + filename)

@@ -171,29 +171,14 @@ class ConfigSpec extends Specification with TestHelper {
     }
 
     "load a test resource as a sanity check" in {
-      ClassLoader.getSystemClassLoader.getResource("happy.conf") mustNot beNull
+      getClass.getClassLoader.getResource("happy.conf") mustNot beNull
     }
 
     "include from a resource" in {
-      /* kinda cheaty: we know the current folder is the project root,
-       * so we can stuff something in build-test/ briefly to get it to
-       * appear in the classpath.
-       */
-      val tempFilename = new File(new File(".").getAbsolutePath, "target/scala_2.7.7/resources/net/lag/configgy/happy.conf")
-
-      try {
-        val data1 = "commie = 501\n"
-        val f1 = new FileOutputStream(tempFilename)
-        f1.write(data1.getBytes)
-        f1.close
-
-        val c = new Config
-        c.importer = new ResourceImporter(ClassLoader.getSystemClassLoader)
-        c.load("include \"happy.conf\"\n")
-        c.toString mustEqual "{: commie=\"501\" }"
-      } finally {
-        tempFilename.delete
-      }
+      val c = new Config
+      c.importer = new ResourceImporter(getClass.getClassLoader)
+      c.load("include \"happy.conf\"\n")
+      c.toString mustEqual "{: commie=\"501\" }"
     }
 
     "build from a map" in {

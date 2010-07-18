@@ -92,7 +92,7 @@ class JmxWrapper(node: Attributes) extends jmx.DynamicMBean {
       case "remove_list" =>
         params match {
           case Array(name: String, value: String) =>
-            node.setList(name, node.getList(name).toList - value)
+            node.setList(name, node.getList(name).toList filterNot (_ == value))
           case _ =>
             throw new jmx.MBeanException(new Exception("bad signature " + params.toList.toString))
         }

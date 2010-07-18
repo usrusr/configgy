@@ -34,10 +34,22 @@ case class ParseException(message: String, cse:Throwable) extends Exception(mess
 
 
 private[configgy] class ConfigParser(var attr: Attributes, val importer: Importer) extends RegexParsers {
+  trait ConfigType[T] {
+    def rule: Parser[T]
+    def stringToType: String => T
+    def typeToString: T => String
+    def validate: T => Boolean
+  }
+  abstract class EnumeratedConfigType[T](val values: Set[T]) extends ConfigType[T] {
+    def validate(x: T) = values contains x
+  }
+  // private var _userConfigTypes: 
 
   val sections = new Stack[String]
   var prefix = ""
 
+  // Stack reversed iteration order from 2.7 to 2.8!!
+  def sectionsString = sections.toList.reverse.mkString(".")
 
   // tokens
   override val whiteSpace = """(\s+|#[^\n]*\n)+""".r
@@ -53,7 +65,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
 
   def includeFile = "include" ~> string ^^ {
     case filename: String =>
-      new ConfigParser(attr.makeAttributes(sections.mkString(".")), importer) parse importer.importFile(filename)
+      new ConfigParser(attr.makeAttributes(sectionsString), importer) parse importer.importFile(filename)
   }
 
   def assignment = identToken ~ assignToken ~ value ^^ {
@@ -79,13 +91,14 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
   def sectionOpenBrace = tagNameToken ~ opt("(" ~> rep(tagAttribute) <~ ")") <~ "{" ^^ {
     case name ~ attrListOption => openBlock(name, attrListOption.getOrElse(Nil))
   }
-  def sectionCloseBrace = "}" ^^ { x => closeBlock(None) }
+  def sectionCloseBrace = "}" ^^^ closeBlock(None)
 
   private def openBlock(name: String, attrList: List[(String, String)]) = {
-    val parent = if (sections.size > 0) attr.makeAttributes(sections.mkString(".")) else attr
+
+    val parent = if (sections.size > 0) attr.makeAttributes(sectionsString) else attr
     sections push name
-    prefix = sections.mkString("", ".", ".")
-    val newBlock = attr.makeAttributes(sections.mkString("."))
+    prefix = sectionsString + "."
+    val newBlock = attr.makeAttributes(sectionsString)
     for ((k, v) <- attrList) k match {
       case "inherit" =>
         newBlock.inheritFrom = Some(if (parent.getConfigMap(v).isDefined) parent.makeAttributes(v) else attr.makeAttributes(v))
@@ -94,33 +107,28 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
     }
   }
 
-  private def closeBlock(name: Option[String]) = {
-    if (sections.isEmpty) {
-      failure("dangling close tag")
-    } else { 
+  private def closeBlock(name: Option[String]): Unit =
+    if (sections.isEmpty) failure("dangling close tag")
+    else {
       val last = sections.pop
-      if (name.isDefined && last != name.get) {
+      if (name.isDefined && last != name.get)
         failure("got closing tag for " + name.get + ", expected " + last)
-      } else {
-        prefix = if (sections.isEmpty) "" else sections.mkString("", ".", ".")
-      }
+      else
+        prefix = if (sections.isEmpty) "" else sectionsString + "."
     }
-  }
-
 
   def value: Parser[Any] = number | string | stringList | trueFalse
   def number = numberToken ^^ { x => if (x.contains('.')) x else x.toInt }
   def string = "\"" ~> stringToken <~ "\"" ^^ { s => attr.interpolate(prefix, s.unquoteC) }
   def stringList = "[" ~> repsep(string | numberToken, opt(",")) <~ (opt(",") ~ "]") ^^ { list => list.toArray }
-  def trueFalse: Parser[Boolean] = ("(true|on)".r ^^ { x => true }) | ("(false|off)".r ^^ { x => false })
+  def trueFalse: Parser[Boolean] = ("(true|on)".r ^^^ true ) | ("(false|off)".r ^^^ false )
 
 
   def parse(in: String): Unit = { 
 //println("parsing:::"+in +" "+(new Exception).getStackTrace.map(_.toString).mkString("\n"))    
     parseAll(root, in) match {
       case Success(result, _) => result
-      case x @ Failure(msg, z) => throw new ParseException(x.toString)
-      case x @ Error(msg, _) => throw new ParseException(x.toString)
+      case x: NoSuccess       => throw new ParseException(x.toString)
     }
   }
 }

@@ -22,7 +22,6 @@ import _root_.java.nio.{ByteBuffer, ByteOrder}
 import _root_.java.util.{Arrays, logging => javalog}
 import _root_.scala.collection.mutable
 
-
 private class Retry extends Exception("retry")
 
 object ScribeHandler {
@@ -54,14 +53,9 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
 
   var archaicServer = false
 
-  def server_=(server: String) {
-    val parts = server.split(":", 2)
-    if (parts.length == 2) {
-      hostname = parts(0)
-      port = parts(1).toInt
-    } else {
-      hostname = parts(0)
-    }
+  def server_=(server: String): Unit = server.split(":", 2) match {
+    case Array(h)     => hostname = h
+    case Array(h, p)  => hostname = h ; port = p.toInt
   }
 
   def server = "%s:%d".format(hostname, port)
@@ -69,9 +63,8 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   private def connect() {
     if (!socket.isDefined && (System.currentTimeMillis - lastConnectAttempt > connectBackoffMilliseconds)) {
       lastConnectAttempt = System.currentTimeMillis
-      try {
-        socket = Some(new Socket(hostname, port))
-      } catch {
+      try socket = Some(new Socket(hostname, port))
+      catch {
         case e: Exception =>
           log.error("Unable to open socket to scribe server at %s: %s", server, e)
       }
@@ -125,7 +118,7 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   }
 
   def makeBuffer(count: Int): ByteBuffer = {
-    val texts = for (i <- 0 until count) yield queue(i).getBytes("UTF-8")
+    val texts = 0 until count map (i => queue(i) getBytes "UTF-8")
 
     val recordHeader = ByteBuffer.wrap(new Array[Byte](10 + category.length))
     recordHeader.order(ByteOrder.BIG_ENDIAN)
@@ -155,13 +148,9 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
   }
 
   def close(): Unit = synchronized {
-    for (s <- socket) {
-      try {
-        s.close()
-      } catch {
-        case _ =>
-      }
-    }
+    try socket map (_.close())
+    catch { case _ => }
+
     socket = None
   }
 
@@ -176,12 +165,12 @@ class ScribeHandler(formatter: Formatter) extends Handler(formatter) {
     }
   }
 
-  override def toString = {
+  override def toString =
     ("<%s level=%s utc=%s truncate=%d truncate_stack=%d server=%s scribe_buffer_msec=%d " +
-     "scribe_backoff_msec=%d scribe_max_packet_size=%d>").format(getClass.getName, getLevel,
-      if (useUtc) "true" else "false", truncateAt, truncateStackTracesAt, server,
-      bufferTimeMilliseconds, connectBackoffMilliseconds, maxMessagesPerTransaction)
-  }
+     "scribe_backoff_msec=%d scribe_max_packet_size=%d>").format(
+       getClass.getName, getLevel, useUtc, truncateAt, truncateStackTracesAt, server,
+       bufferTimeMilliseconds, connectBackoffMilliseconds, maxMessagesPerTransaction
+    )
 
   val SCRIBE_PREFIX: Array[Byte] = Array(
     // version 1, call, "Log", reqid=0

@@ -21,42 +21,26 @@ import scala.collection.{immutable, mutable}
 import scala.collection.JavaConversions
 
 
-//// grr, scala can wrap any specific java Map type, but not the generic Map. why not?
-//private class JavaMap[K, E](override val underlying: java.util.Map[K, E]) extends jcl.MapWrapper[K, E]
-
-
 /**
  * A ConfigMap that wraps the system environment. This is used as a
  * fallback when looking up "$(...)" substitutions in config files.
  */
 private[configgy] object EnvironmentAttributes extends ConfigMap {
-  private val env = immutable.Map.empty[String, String] ++ (JavaConversions.asMap(System.getenv()).elements)
+  private var env = immutable.Map.empty[String, String] ++ (JavaConversions.asMap(System.getenv()).iterator)
 
   // deal with java.util.Properties extending
   // java.util.Hashtable[Object, Object] and not
   // java.util.Hashtable[String, String]
-  private def getSystemProperties(): mutable.HashMap[String,String] = {
-    val map = new mutable.HashMap[String, String]
-    for (entry <- JavaConversions.asMap(System.getProperties()).elements) {
-      entry match {
-        case (k: String, v: String) => map.put(k, v)
-        case _ =>
-      }
-    }
-    map
-  }
+  private def getSystemProperties(): mutable.HashMap[String,String] =
+    mutable.HashMap(JavaConversions.asMap(System.getProperties()).toList collect { case (k: String, v: String) => (k, v) } : _*)
 
-  def getString(key: String): Option[String] = {
-    getSystemProperties().get(key).orElse(env.get(key))
-  }
+  def getString(key: String): Option[String] =
+    (getSystemProperties() get key) orElse (env get key)
 
   def getConfigMap(key: String): Option[ConfigMap] = None
   def configMap(key: String): ConfigMap = error("not implemented")
 
-  def getList(key: String): Seq[String] = getString(key) match {
-    case None => Array[String]()
-    case Some(x) => Array[String](x)
-  }
+  def getList(key: String): Seq[String] = getString(key).toList
 
   def setString(key: String, value: String): Unit = error("read-only attributes")
   def setList(key: String, value: Seq[String]): Unit = error("read-only attributes")
@@ -67,7 +51,7 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
   }
 
   def remove(key: String): Boolean = error("read-only attributes")
-  def keys: Iterator[String] = (getSystemProperties().keySet ++ env.keySet).elements
+  def keys: Iterator[String] = (getSystemProperties().keySet ++ env.keySet).iterator
   def asMap(): Map[String, String] = error("not implemented")
   def toConfigString = error("not implemented")
   def subscribe(subscriber: Subscriber): SubscriptionKey = error("not implemented")
@@ -80,14 +64,14 @@ private[configgy] object EnvironmentAttributes extends ConfigMap {
     val addr = InetAddress.getLocalHost
     val ip = addr.getHostAddress
     val dns = addr.getHostName
-
-    if (ip ne null) {
-      env("HOSTIP") = ip
-    }
-    if (dns ne null) {
-      env("HOSTNAME") = dns
-    }
-  } catch {
+    
+    if (ip ne null)
+      env = env.updated("HOSTIP", ip)
+    
+    if (dns ne null)
+      env = env.updated("HOSTNAME", dns)
+  }
+  catch {
     case _ => // pass
   }
 }

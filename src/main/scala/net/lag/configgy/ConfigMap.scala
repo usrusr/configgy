@@ -20,9 +20,16 @@ import scala.collection.Map
 import scala.util.Sorting
 import net.lag.logging.Logger
 
-
 class ConfigException(reason: String) extends Exception(reason)
 
+object ConfigMap {
+  final val TRUE = true.toString
+  final val FALSE = false.toString
+  
+  def numWrap[A](f: => A): Option[A] =
+    try Some(f) catch { case _: NumberFormatException => None }    
+}
+import ConfigMap._
 
 /**
  * Abstract trait for a map of string keys to strings, string lists, or (nested) ConfigMaps.
@@ -30,9 +37,6 @@ class ConfigException(reason: String) extends Exception(reason)
  * strings in the process.
  */
 trait ConfigMap {
-  private val TRUE = "true" 
-  private val FALSE = "false"
-
 
   // -----  required methods
 
@@ -156,112 +160,63 @@ trait ConfigMap {
    * If the requested key is present, return its value. Otherwise, return
    * the given default value.
    */
-  def getString(key: String, defaultValue: String): String = {
-    getString(key) match {
-      case Some(x) => x
-      case None => defaultValue
-    }
-  }
+  def getString(key: String, defaultValue: String): String =
+    getString(key) getOrElse defaultValue
 
   /**
    * If the requested key is present and can be converted into an int
    * (via `String.toInt`), return that int. Otherwise, return `None`.
    */
-  def getInt(key: String): Option[Int] = {
-    getString(key) match {
-      case Some(x) => {
-        try {
-          Some(x.toInt)
-        } catch {
-          case _: NumberFormatException => None
-        }
-      }
-      case None => None
-    }
-  }
+  def getInt(key: String): Option[Int] =
+    getString(key) flatMap (x => numWrap(x.toInt))
 
   /**
    * If the requested key is present and can be converted into an int
    * (via `String.toInt`), return that int. Otherwise,
    * return the given default value.
    */
-  def getInt(key: String, defaultValue: Int): Int = {
-    getInt(key) match {
-      case Some(n) => n
-      case None => defaultValue
-    }
-  }
+  def getInt(key: String, defaultValue: Int): Int =
+    getInt(key) getOrElse defaultValue
 
   /**
    * If the requested key is present and can be converted into a long
    * (via `String.toLong`), return that long. Otherwise, return `None`.
    */
-  def getLong(key: String): Option[Long] = {
-    getString(key) match {
-      case Some(x) => {
-        try {
-          Some(x.toLong)
-        } catch {
-          case _: NumberFormatException => None
-        }
-      }
-      case None => None
-    }
-  }
+  def getLong(key: String): Option[Long] =
+    getString(key) flatMap (x => numWrap(x.toLong))
 
   /**
    * If the requested key is present and can be converted into a long
    * (via `String.toLong`), return that long. Otherwise,
    * return the given default value.
    */
-  def getLong(key: String, defaultValue: Long): Long = {
-    getLong(key) match {
-      case Some(n) => n
-      case None => defaultValue
-    }
-  }
+  def getLong(key: String, defaultValue: Long): Long =
+    getLong(key) getOrElse defaultValue
 
   /**
    * If the requested key is present and can be converted into a double
    * (via `String.toDouble`), return that double. Otherwise, return `None`.
    */
-  def getDouble(key: String): Option[Double] = {
-    getString(key) match {
-      case Some(x) => {
-        try {
-          Some(x.toDouble)
-        } catch {
-          case _: NumberFormatException => None
-        }
-      }
-      case None => None
-    }
-  }
+  def getDouble(key: String): Option[Double] =
+    getString(key) flatMap (x => numWrap(x.toDouble))
 
   /**
    * If the requested key is present and can be converted into a double
    * (via `String.toDouble`), return that double. Otherwise,
    * return the given default value.
    */
-  def getDouble(key: String, defaultValue: Double): Double = {
-    getDouble(key) match {
-      case Some(n) => n
-      case None => defaultValue
-    }
-  }
+  def getDouble(key: String, defaultValue: Double): Double =
+    getDouble(key) getOrElse defaultValue
 
   /**
    * If the requested key is present and can be converted into a bool
    * (by being either `"true"` or `"false"`),
    * return that bool. Otherwise, return `None`.
    */
-  def getBool(key: String): Option[Boolean] = {
-    getString(key) match {
-      case Some(x) =>
-        if (x != TRUE && x != FALSE) throw new ConfigException("invalid boolean value")
-        Some(x.equals(TRUE))
-      case None => None
-    }
+  def getBool(key: String): Option[Boolean] = getString(key) map { 
+    case TRUE   => true
+    case FALSE  => false
+    case _      => throw new ConfigException("invalid boolean value")
   }
 
   /**
@@ -269,12 +224,8 @@ trait ConfigMap {
    * (by being either `"true"` or `"false"`),
    * return that bool. Otherwise, return the given default value.
    */
-  def getBool(key: String, defaultValue: Boolean): Boolean = {
-    getBool(key) match {
-      case Some(b) => b
-      case None => defaultValue
-    }
-  }
+  def getBool(key: String, defaultValue: Boolean): Boolean =
+    getBool(key) getOrElse defaultValue
 
   /**
    * Set the given key to an int value, by converting it to a string
@@ -298,33 +249,23 @@ trait ConfigMap {
    * Set the given key to a bool value, by converting it to a string
    * first.
    */
-  def setBool(key: String, value: Boolean): Unit = {
-    setString(key, if (value) TRUE else FALSE)
-  }
+  def setBool(key: String, value: Boolean): Unit = setString(key, if (value) TRUE else FALSE)
 
   /**
    * Return the keys of this map, in sorted order.
    */
-  def sortedKeys() = {
-    // :( why does this have to be done manually?
-    val keys = this.keys.toList.toArray
-    Sorting.quickSort(keys)
-    keys
-  }
+  def sortedKeys() = keys.toList sortWith (_ < _)
 
   /**
    * Subscribe to changes on this ConfigMap, but don't bother with
    * validating. Whenever this ConfigMap changes, a new copy will be
    * passed to the given function.
    */
-  def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {
+  def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey =
     subscribe(new Subscriber {
-      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
-      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-        f(replacement)
-      }
+      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]) { }
+      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]) { f(replacement) }
     })
-  }
 
   /**
    * Convert this ConfigMap into a string which could be written into a config
@@ -344,7 +285,7 @@ trait ConfigMap {
         log.warning("Ignoring config key '%s' which doesn't have a setter in class %s", key, cls)
       }
       setters.foreach { method =>
-        val expectedType = method.getParameterTypes().first.getCanonicalName
+        val expectedType = method.getParameterTypes().head.getCanonicalName
         val param = expectedType match {
           case "int" => getInt(key)
           case "long" => getLong(key)
@@ -364,10 +305,8 @@ trait ConfigMap {
    * ConfigException. `toInt` and `toBoolean` may be called on the
    * returned string if an int or bool is desired.
    */
-  def apply(key: String): String = getString(key) match {
-    case None => throw new ConfigException("undefined config: " + key)
-    case Some(v) => v
-  }
+  def apply(key: String): String =
+    getString(key) getOrElse (throw new ConfigException("undefined config: " + key))
 
   /** Equivalent to `getString(key, defaultValue)`. */
   def apply(key: String, defaultValue: String) = getString(key, defaultValue)

@@ -26,6 +26,7 @@ import net.lag.extensions._
  * and connects it with a formatter automatically.
  */
 abstract class Handler(_formatter: Formatter) extends javalog.Handler {
+  type FormatterType <: Formatter
 
   setFormatter(_formatter)
 
@@ -72,47 +73,10 @@ abstract class Handler(_formatter: Formatter) extends javalog.Handler {
   /**
    * Return the formatter associated with this log handler.
    */
-  def formatter = getFormatter.asInstanceOf[Formatter]
+  def formatter: FormatterType = getFormatter.asInstanceOf[FormatterType]
 
   override def toString = {
     "<%s level=%s utc=%s truncate=%d truncate_stack=%d>".format(getClass.getName, getLevel,
       if (useUtc) "true" else "false", truncateAt, truncateStackTracesAt)
   }
-}
-
-
-/**
- * Mostly useful for unit tests: logging goes directly into a
- * string buffer.
- */
-class StringHandler(_formatter: Formatter) extends Handler(_formatter) {
-  private var buffer = new StringBuilder()
-
-  def publish(record: javalog.LogRecord) = {
-    buffer append getFormatter().format(record)
-  }
-
-  def close() = { }
-
-  def flush() = { }
-
-  override def toString = buffer.toString
-
-  def clear() = {
-    buffer.clear
-  }
-}
-
-
-/**
- * Log things to the console.
- */
-class ConsoleHandler(_formatter: Formatter) extends Handler(_formatter) {
-  def publish(record: javalog.LogRecord) = {
-    System.err.print(getFormatter().format(record))
-  }
-
-  def close() = { }
-
-  def flush() = Console.flush
 }

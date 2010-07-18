@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.lag.configgy
+package net.lag
+package configgy
 
 import java.io.File
 import net.lag.logging.Logger
-
 
 /**
  * Main API entry point into the configgy library.
@@ -56,13 +56,9 @@ object Configgy {
    * The base folder will be extracted from the filename and used as a base
    * path for resolving filenames given in "include" lines.
    */
-  def configure(filename: String): Unit = {
-    val n = filename.lastIndexOf('/')
-    if (n < 0) {
-      configure(new File(".").getCanonicalPath, filename)
-    } else {
-      configure(filename.substring(0, n), filename.substring(n + 1))
-    }
+  def configure(filename: String): Unit = filename.lastIndexOf('/') match {
+    case -1   => configure(new File(".").getCanonicalPath, filename)
+    case n    => configure(filename take n, filename drop (n + 1))
   }
 
   /**
@@ -71,33 +67,20 @@ object Configgy {
    * verify and commit the change (even if their nodes didn't actually
    * change).
    */
-  def reload: Unit = {
-    try {
-      _config.loadFile(previousPath, previousFilename)
-    } catch {
+  def reload: Unit =
+    try _config.loadFile(previousPath, previousFilename)
+    catch {
       case e: Throwable =>
         Logger.get.critical(e, "Failed to reload config file '%s/%s'", previousPath, previousFilename)
         throw e
     }
-  }
-
-  /**
-   * Configure the server by loading a config file from the given named
-   * resource inside this jar file. "include" lines will also operate
-   * on resource paths.
-   */
-  def configureFromResource(name: String) = {
-    Logger.reset
-    _config = Config.fromResource(name)
-    configLogging
-  }
 
   /**
    * Configure the server by loading a config file from the given named
    * resource inside this jar file, using a specific class loader.
    * "include" lines will also operate on resource paths.
    */
-  def configureFromResource(name: String, classLoader: ClassLoader) = {
+  def configureFromResource(name: String, classLoader: ClassLoader = ClassLoader.getSystemClassLoader) = {
     Logger.reset
     _config = Config.fromResource(name, classLoader)
     configLogging
@@ -109,10 +92,9 @@ object Configgy {
     try {
       val attr = _config.getConfigMap("log")
       subscriber.commit(None, attr)
-      if (attr.isDefined) {
-        attr.get.subscribe(subscriber)
-      }
-    } catch {
+      attr foreach (_ subscribe subscriber)
+    }
+    catch {
       case e: Throwable =>
         log.critical(e, "Failed to configure logging")
         throw e
@@ -128,36 +110,25 @@ object Configgy {
     subscriber.commit(None, Some(config))
   }
 
-
   private class LoggingConfigSubscriber extends Subscriber {
-    @throws(classOf[ValidationException])
-    def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-      try {
-        for (logConfig <- replacement) {
-          Logger.configure(logConfig, true, true)
-          for (key <- logConfig.keys; block <- logConfig.getConfigMap(key)) {
-            Logger.configure(block, true, false)
-          }
-        }
-      } catch {
-        case e: Throwable => throw new ValidationException(e.toString)
-      }
+    private def runReplacement(logConfig: ConfigMap, validateOnly: Boolean) {
+      Logger.configure(logConfig, validateOnly, true)
+      for (key <- logConfig.keys; block <- logConfig getConfigMap key)
+        Logger.configure(block, validateOnly, false)
     }
+    
+    @throws(classOf[ValidationException])
+    def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit =
+      try replacement foreach (x => runReplacement(x, true))
+      catch { case e => throw new ValidationException(e.toString) }
 
-    def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
+    def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]) {
       Logger.reset
-
-      for (logConfig <- replacement) {
-        Logger.configure(logConfig, false, true)
-        for (key <- logConfig.keys; block <- logConfig.getConfigMap(key)) {
-          Logger.configure(block, false, false)
-        }
-      }
+      replacement foreach (x => runReplacement(x, false))
 
       val log = Logger.get("")
-      if (log.getLevel() eq null) {
-        log.setLevel(Logger.INFO)
-      }
+      if (log.getLevel() == null)
+        log setLevel Logger.INFO
     }
   }
 }

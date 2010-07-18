@@ -21,7 +21,7 @@ import net.lag.logging.{Level, Logger}
 import org.specs._
 
 
-object AttributesSpec extends Specification {
+class AttributesSpec extends Specification {
 
   "Attributes" should {
     "set values" in {
@@ -149,9 +149,9 @@ object AttributesSpec extends Specification {
       val map = s.asMap
 
       // turn it into a sorted list, so we get a deterministic answer
-      val keyList = map.keys.toList.toArray
+      val keyList = map.keysIterator.toList.toArray
       Sorting.quickSort(keyList)
-      (for (val k <- keyList) yield (k + "=" + map(k))).mkString("{ ", ", ", " }") mustEqual
+      (for (k <- keyList) yield (k + "=" + map(k))).mkString("{ ", ", ", " }") mustEqual
         "{ age=8, diet.food=Meow Mix, diet.liquid=water, disposition=fighter, name=Communist }"
     }
 

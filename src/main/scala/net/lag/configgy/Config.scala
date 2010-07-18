@@ -14,46 +14,31 @@
  * limitations under the License.
  */
 
-package net.lag.configgy
+package net.lag
+package configgy
 
 import java.io.File
 import java.lang.management.ManagementFactory
 import javax.{management => jmx}
-import scala.collection.{Map, Set}
-import scala.collection.{immutable, mutable}
+import scala.collection.{ Map, Set, immutable, mutable }
 import net.lag.extensions._
 import net.lag.logging.Logger
-
 
 private abstract class Phase
 private case object VALIDATE_PHASE extends Phase
 private case object COMMIT_PHASE extends Phase
 
-
 private class SubscriptionNode {
-  var subscribers = new mutable.HashSet[Subscriber]
-  var map = new mutable.HashMap[String, SubscriptionNode]
+  val subscribers = new mutable.HashSet[Subscriber]
+  val map = new mutable.HashMap[String, SubscriptionNode]
 
-  def get(name: String): SubscriptionNode = {
-    map.get(name) match {
-      case Some(x) => x
-      case None =>
-        val node = new SubscriptionNode
-        map(name) = node
-        node
-    }
-  }
+  def get(name: String): SubscriptionNode = map.getOrElseUpdate(name, new SubscriptionNode)
 
   override def toString() = {
     val out = new StringBuilder("%d" format subscribers.size)
     if (map.size > 0) {
       out.append(" { ")
-      for (val key <- map.keys) {
-        out.append(key)
-        out.append("=")
-        out.append(map(key).toString)
-        out.append(" ")
-      }
+      map foreach { case (k, v) => out append "%s=%s ".format(k, v) }
       out.append("}")
     }
     out.toString
@@ -67,7 +52,8 @@ private class SubscriptionNode {
     }
 
     // first, call all subscribers for this node.
-    for (val subscriber <- subscribers) {
+    
+    for (subscriber <- subscribers) {
       phase match {
         case VALIDATE_PHASE => subscriber.validate(current, replacement)
         case COMMIT_PHASE => subscriber.commit(current, replacement)
@@ -78,27 +64,15 @@ private class SubscriptionNode {
      * continue the validate/commit. if the key is exhausted, call
      * subscribers for ALL nodes below this one.
      */
-    var nextNodes: Iterator[(String, SubscriptionNode)] = null
-    key match {
-      case Nil => nextNodes = map.elements
-      case segment :: _ => {
-        map.get(segment) match {
-            case None => return     // done!
-            case Some(node) => nextNodes = Iterator.single((segment, node))
-        }
-      }
-    }
+    val nextNodes =
+      if (key.isEmpty) map.toList
+      else map.toList find (_._1 == key.head) toList
 
-    for (val (segment, node) <- nextNodes) {
-      val subCurrent = current match {
-        case None => None
-        case Some(x) => x.getConfigMap(segment)
-      }
-      val subReplacement = replacement match {
-        case None => None
-        case Some(x) => x.getConfigMap(segment)
-      }
-      node.validate(if (key == Nil) Nil else key.tail, subCurrent, subReplacement, phase)
+    for ((segment, node) <- nextNodes) {
+      val subCurrent = current flatMap (_ getConfigMap segment)
+      val subReplacement = replacement flatMap (_ getConfigMap segment)
+
+      node.validate(key drop 1, subCurrent, subReplacement, phase)
     }
   }
 }
@@ -120,7 +94,6 @@ class Config extends ConfigMap {
   private var jmxPackageName: String = ""
   private var jmxSubscriptionKey: Option[SubscriptionKey] = None
 
-
   /**
    * Importer for resolving "include" lines when loading config files.
    * By default, it's a FilesystemImporter based on the current working
@@ -128,18 +101,17 @@ class Config extends ConfigMap {
    */
   var importer: Importer = new FilesystemImporter(new File(".").getCanonicalPath)
 
-
   /**
    * Read config data from a string and use it to populate this object.
    */
   def load(data: String) = {
-    var newRoot = new Attributes(this, "")
+
+    val newRoot = new Attributes(this, "")
     new ConfigParser(newRoot, importer).parse(Importer.escapeBackslashU(data))
- 
+
     if (root.isMonitored) {
       // throws exception if validation fails:
-      subscribers.validate(Nil, Some(root), Some(newRoot), VALIDATE_PHASE)
-      subscribers.validate(Nil, Some(root), Some(newRoot), COMMIT_PHASE)
+      List(VALIDATE_PHASE, COMMIT_PHASE) foreach (p => subscribers.validate(Nil, Some(root), Some(newRoot), p))
     }
 
     if (root.isMonitored) newRoot.setMonitored
@@ -149,60 +121,51 @@ class Config extends ConfigMap {
   /**
    * Read config data from a file and use it to populate this object.
    */
-  def loadFile(filename: String) = {
+  def loadFile(filename: String) {
     load(importer.importFile(filename))
   }
 
   /**
    * Read config data from a file and use it to populate this object.
    */
-  def loadFile(path: String, filename: String) = {
+  def loadFile(path: String, filename: String) {
     importer = new FilesystemImporter(path)
-    load(importer.importFile(filename))
+    loadFile(filename)
   }
 
-
   override def toString = root.toString
-
 
   // -----  subscriptions
 
   private[configgy] def subscribe(key: String, subscriber: Subscriber): SubscriptionKey = synchronized {
     root.setMonitored
-    var subkey = nextKey
+    val subkey = nextKey
     nextKey += 1
-    var node = subscribers
-    if (key ne null) {
-      for (val segment <- key.split("\\.")) {
-        node = node.get(segment)
-      }
-    }
+    
+    val node = dotSegments(key).foldLeft(subscribers)(_ get _)
     node.subscribers += subscriber
+    
     subscriberKeys += Pair(subkey, (node, subscriber))
     new SubscriptionKey(this, subkey)
   }
 
-  private[configgy] def subscribe(key: String)(f: (Option[ConfigMap]) => Unit): SubscriptionKey = {
+  private[configgy] def subscribe(key: String)(f: (Option[ConfigMap]) => Unit): SubscriptionKey =
     subscribe(key, new Subscriber {
-      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = { }
-      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]): Unit = {
-        f(replacement)
-      }
+      def validate(current: Option[ConfigMap], replacement: Option[ConfigMap]) { }
+      def commit(current: Option[ConfigMap], replacement: Option[ConfigMap]) { f(replacement) }
     })
-  }
 
-  def subscribe(subscriber: Subscriber) = subscribe(null.asInstanceOf[String], subscriber)
+  def subscribe(subscriber: Subscriber): SubscriptionKey = subscribe(null: String, subscriber)
 
-  override def subscribe(f: (Option[ConfigMap]) => Unit) = subscribe(null.asInstanceOf[String])(f)
+  override def subscribe(f: (Option[ConfigMap]) => Unit): SubscriptionKey = subscribe(null: String)(f)
 
   private[configgy] def unsubscribe(subkey: SubscriptionKey) = synchronized {
     subscriberKeys.get(subkey.id) match {
       case None => false
-      case Some((node, sub)) => {
+      case Some((node, sub)) =>
         node.subscribers -= sub
         subscriberKeys -= subkey.id
         true
-      }
     }
   }
 
@@ -218,9 +181,11 @@ class Config extends ConfigMap {
    */
   def unregisterWithJmx() = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
-    for (name <- jmxNodes) mbs.unregisterMBean(new jmx.ObjectName(name))
+    
+    jmxNodes foreach (name => mbs unregisterMBean new jmx.ObjectName(name))    
     jmxNodes = Nil
-    for (key <- jmxSubscriptionKey) unsubscribe(key)
+    
+    jmxSubscriptionKey foreach unsubscribe
     jmxSubscriptionKey = None
   }
 
@@ -235,22 +200,22 @@ class Config extends ConfigMap {
   def registerWithJmx(packageName: String): Unit = {
     val mbs = ManagementFactory.getPlatformMBeanServer()
     val nodes = root.getJmxNodes(packageName, "")
-    val nodeNames = nodes.map { case (name, bean) => name }
+    val nodeNames = nodes map (_._1)
     // register any new nodes
-    nodes.filter { name => !(jmxNodes contains name) }.foreach { case (name, bean) =>
-      try {
-        mbs.registerMBean(bean, new jmx.ObjectName(name))
-      } catch {
-        case x: jmx.InstanceAlreadyExistsException =>
-          // happens in unit tests.
-      }
+    nodes filterNot (jmxNodes contains _) foreach { 
+      case (name, bean) =>
+        try mbs.registerMBean(bean, new jmx.ObjectName(name))
+        catch { case _: jmx.InstanceAlreadyExistsException => ()  } // happens in unit tests.
     }
+
     // unregister nodes that vanished
-    (jmxNodes -- nodeNames).foreach { name => mbs.unregisterMBean(new jmx.ObjectName(name)) }
+    jmxNodes filterNot (nodeNames contains _) foreach { name =>
+      mbs unregisterMBean new jmx.ObjectName(name)
+    }
 
     jmxNodes = nodeNames
     jmxPackageName = packageName
-    if (jmxSubscriptionKey == None) {
+    if (jmxSubscriptionKey.isEmpty) {
       jmxSubscriptionKey = Some(subscribe { _ => registerWithJmx(packageName) })
     }
   }
@@ -260,21 +225,20 @@ class Config extends ConfigMap {
 
   @throws(classOf[ValidationException])
   private def deepChange(name: String, key: String, operation: (ConfigMap, String) => Boolean): Boolean = synchronized {
-    val fullKey = if (name == "") (key) else (name + "." + key)
+    // println("deepChange(%s, %s)".format(name, key))
+    val fullKey = if (name == "") key else name + "." + key
     val newRoot = root.copy
-    val keyList = fullKey.split("\\.").toList
+    
+    operation(newRoot, fullKey) && {
+      // throws exception if validation fails:
+      List(VALIDATE_PHASE, COMMIT_PHASE) foreach { p =>
+        subscribers.validate(dotSegments(fullKey), Some(root), Some(newRoot), p)
+      }
 
-    if (! operation(newRoot, fullKey)) {
-      return false
+      if (root.isMonitored) newRoot.setMonitored
+      root replaceWith newRoot
+      true
     }
-
-    // throws exception if validation fails:
-    subscribers.validate(keyList, Some(root), Some(newRoot), VALIDATE_PHASE)
-    subscribers.validate(keyList, Some(root), Some(newRoot), COMMIT_PHASE)
-
-    if (root.isMonitored) newRoot.setMonitored
-    root.replaceWith(newRoot)
-    true
   }
 
   private[configgy] def deepSet(name: String, key: String, value: String) = {
@@ -320,16 +284,12 @@ object Config {
    * and filename. The filename must be relative to the path. The path is
    * used to resolve filenames given in "include" lines.
    */
-  def fromFile(path: String, filename: String): Config = {
-    val config = new Config
-    try {
-      config.loadFile(path, filename)
-    } catch {
-      case e: Throwable =>
-        Logger.get.critical(e, "Failed to load config file '%s/%s'", path, filename)
-        throw e
+  def fromFile(path: String, filename: String) = returning(new Config) {    
+    try _.loadFile(path, filename)
+    catch { case e =>
+      Logger.get.critical(e, "Failed to load config file '%s/%s'", path, filename)
+      throw e
     }
-    config
   }
 
   /**
@@ -337,59 +297,36 @@ object Config {
    * The base folder will be extracted from the filename and used as a base
    * path for resolving filenames given in "include" lines.
    */
-  def fromFile(filename: String): Config = {
-    val n = filename.lastIndexOf('/')
-    if (n < 0) {
-      fromFile(new File(".").getCanonicalPath, filename)
-    } else {
-      fromFile(filename.substring(0, n), filename.substring(n + 1))
-    }
-  }
-
-  /**
-   * Create a Config object from the given named resource inside this jar
-   * file, using the system class loader. "include" lines will also operate
-   * on resource paths.
-   */
-  def fromResource(name: String): Config = {
-    fromResource(name, ClassLoader.getSystemClassLoader)
+  def fromFile(filename: String): Config = filename.lastIndexOf('/') match {
+    case -1   => fromFile(new File(".").getCanonicalPath, filename)
+    case idx  => fromFile(filename take idx, filename drop (idx + 1))
   }
 
   /**
    * Create a Config object from a string containing a config file's contents.
    */
-  def fromString(data: String): Config = {
-    val config = new Config
-    config.load(data)
-    config
-  }
+  def fromString(data: String) = returning(new Config)(_ load data)
 
   /**
    * Create a Config object from the given named resource inside this jar
    * file, using a specific class loader. "include" lines will also operate
    * on resource paths.
    */
-  def fromResource(name: String, classLoader: ClassLoader): Config = {
-    val config = new Config
-    try {
-      config.importer = new ResourceImporter(classLoader)
-      config.loadFile(name)
-    } catch {
-      case e: Throwable =>
-        Logger.get.critical(e, "Failed to load config resource '%s'", name)
-        throw e
+  def fromResource(name: String, classLoader: ClassLoader = ClassLoader.getSystemClassLoader): Config =
+    returning(new Config) { config =>
+      try {
+        config.importer = new ResourceImporter(classLoader)
+        config.loadFile(name)
+      } catch {
+        case e: Throwable =>
+          Logger.get.critical(e, "Failed to load config resource '%s'", name)
+          throw e
+      }
     }
-    config
-  }
 
   /**
    * Create a Config object from a map of String keys and String values.
    */
-  def fromMap(m: Map[String, String]) = {
-    val config = new Config
-    for ((k, v) <- m.elements) {
-      config(k) = v
-    }
-    config
-  }
+  def fromMap(m: Map[String, String]) = 
+    returning(new Config) { config => for ((k, v) <- m) config(k) = v }
 }

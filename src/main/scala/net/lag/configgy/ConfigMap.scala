@@ -30,7 +30,7 @@ class ConfigException(reason: String) extends Exception(reason)
  * strings in the process.
  */
 trait ConfigMap {
-  private val TRUE = "true"
+  private val TRUE = "true" 
   private val FALSE = "false"
 
 

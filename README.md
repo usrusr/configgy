@@ -8,8 +8,11 @@ you to plug it in and get started quickly.
 
 ## About this fork:
 
-- primarily forked to implement exception chaining in ConfigParser (there's not much to consider about this)
-- also changed: escaping scala-y unicode escape sequences in paths and config files (this is probably a matter of taste)   
+- primarily forked to implement exception chaining in ConfigParser 
+(there's not much to consider about this)
+- also changed: escaping scala-y unicode escape sequences in config files that 
+would otherwise be interpreted as escapes in parser 
+(this is probably a matter of taste and not necessarily an improvement for everyone)   
 
 ## Why?
 

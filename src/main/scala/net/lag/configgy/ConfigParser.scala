@@ -27,9 +27,9 @@ import net.lag.extensions._
  * during parsing. The `reason` string will contain the parsing
  * error details.
  */
-case class ParseException(message: String, cause:Throwable) extends Exception(message, cause){
+case class ParseException(message: String, cse:Throwable) extends Exception(message, cse){ 
   def this(message:String) = this(message, null)
-  def this(cause:Throwable) = this(cause.toString, cause)
+  def this(cse:Throwable) = this(cse.toString, cse)
 }
 
 
@@ -83,7 +83,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
 
   private def openBlock(name: String, attrList: List[(String, String)]) = {
     val parent = if (sections.size > 0) attr.makeAttributes(sections.mkString(".")) else attr
-    sections += name
+    sections push name
     prefix = sections.mkString("", ".", ".")
     val newBlock = attr.makeAttributes(sections.mkString("."))
     for ((k, v) <- attrList) k match {
@@ -97,7 +97,7 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
   private def closeBlock(name: Option[String]) = {
     if (sections.isEmpty) {
       failure("dangling close tag")
-    } else {
+    } else { 
       val last = sections.pop
       if (name.isDefined && last != name.get) {
         failure("got closing tag for " + name.get + ", expected " + last)
@@ -115,8 +115,8 @@ private[configgy] class ConfigParser(var attr: Attributes, val importer: Importe
   def trueFalse: Parser[Boolean] = ("(true|on)".r ^^ { x => true }) | ("(false|off)".r ^^ { x => false })
 
 
-  def parse(in: String): Unit = {
-println("parsing:"+in )    
+  def parse(in: String): Unit = { 
+//println("parsing:::"+in +" "+(new Exception).getStackTrace.map(_.toString).mkString("\n"))    
     parseAll(root, in) match {
       case Success(result, _) => result
       case x @ Failure(msg, z) => throw new ParseException(x.toString)

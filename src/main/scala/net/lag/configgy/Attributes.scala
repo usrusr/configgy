@@ -39,8 +39,8 @@ private[configgy] class Attributes(val config: Config, val name: String) extends
   private var monitored = false
   var inheritFrom: Option[ConfigMap] = None
 
-
-  def keys: Iterator[String] = cells.keys
+ 
+  def keys = cells.keys.iterator
 
   override def toString() = {
     val buffer = new StringBuilder("{")

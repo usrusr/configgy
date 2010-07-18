@@ -1,3 +1,6 @@
 target
 configgy.tmproj
 dist
+*.log
+lib_managed
+project/boot

@@ -26,12 +26,8 @@ class ThrottledLogger[T](wrapped: Logger, durationMilliseconds: Int, maxToDispla
 
   private val throttleMap = new mutable.HashMap[T, Throttle]
 
-  def reset() {
-    throttleMap.synchronized {
-      for ((k, throttle) <- throttleMap) {
-        throttle.startTime = 0
-      }
-    }
+  def reset(): Unit = throttleMap.synchronized {
+    throttleMap.valuesIterator foreach (_.startTime = 0)
   }
 
   /**

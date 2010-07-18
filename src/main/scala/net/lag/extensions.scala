@@ -46,7 +46,7 @@ final class ConfiggyString(wrapped: String) {
     var offset = 0
     var out = new StringBuilder
 
-    for (val m <- re.findAllIn(wrapped).matchData) {
+    for (m <- re.findAllIn(wrapped).matchData) {
       if (m.start > offset) {
         out.append(wrapped.substring(offset, m.start))
       }
@@ -83,9 +83,9 @@ final class ConfiggyString(wrapped: String) {
         case '\\' => "\\\\"
         case c =>
           if (c <= 255) {
-              "\\x%02x".format(c.asInstanceOf[Int])
+              "\\x%02x" format c.toInt
           } else {
-              "\\u%04x" format c.asInstanceOf[Int]
+              "\\u%04x" format c.toInt
           }
       }
     }
@@ -104,15 +104,14 @@ final class ConfiggyString(wrapped: String) {
    * @return an unquoted unicode string
    */
   def unquoteC() = {
+    def unhex(s: String): Char = Integer.valueOf(s, 16).intValue.toChar
     regexSub(UNQUOTE_RE) { m =>
       val ch = m.group(1).charAt(0) match {
-        // holy crap! this is terrible:
-        case 'u' => Character.valueOf(Integer.valueOf(m.group(1).substring(1), 16).asInstanceOf[Int].toChar)
-        case 'x' => Character.valueOf(Integer.valueOf(m.group(1).substring(1), 16).asInstanceOf[Int].toChar)
-        case 'r' => '\r'
-        case 'n' => '\n'
-        case 't' => '\t'
-        case x => x
+        case 'u' | 'x'  => unhex(m.group(1) drop 1)
+        case 'r'        => '\r'
+        case 'n'        => '\n'
+        case 't'        => '\t'
+        case x          => x
       }
       ch.toString
     }
@@ -124,7 +123,7 @@ final class ConfiggyString(wrapped: String) {
    */
   def unhexlify(): Array[Byte] = {
     val buffer = new Array[Byte](wrapped.length / 2)
-    for (val i <- 0.until(wrapped.length, 2)) {
+    for (i <- 0.until(wrapped.length, 2)) {
       buffer(i/2) = Integer.parseInt(wrapped.substring(i, i+2), 16).toByte
     }
     buffer
@@ -138,7 +137,7 @@ final class ConfiggyByteArray(wrapped: Array[Byte]) {
    */
   def hexlify(): String = {
     val out = new StringBuffer
-    for (val b <- wrapped) {
+    for (b <- wrapped) {
       val s = (b.toInt & 0xff).toHexString
       if (s.length < 2) {
         out append '0'

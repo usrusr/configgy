@@ -20,7 +20,7 @@ import org.specs._
 import net.lag.extensions._
 
 
-object ConfigParserSpec extends Specification {
+class ConfigParserSpec extends Specification {
 
   class FakeImporter extends Importer {
     def importFile(filename: String): String = {

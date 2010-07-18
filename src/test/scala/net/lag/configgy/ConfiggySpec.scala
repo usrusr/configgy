@@ -19,9 +19,9 @@ package net.lag.configgy
 import _root_.java.io.{BufferedReader, InputStreamReader, File, FileInputStream, FileOutputStream}
 import _root_.net.lag.logging.{FileHandler, Logger}
 import _root_.org.specs._
+import net.lag.TestHelper
 
-
-object ConfiggySpec extends Specification with TestHelper {
+class ConfiggySpec extends Specification with TestHelper {
 
   private def writeConfigFile(filename: String, data: String) = {
     val f = new FileOutputStream(folderName + "/" + filename)
@@ -199,14 +199,16 @@ object ConfiggySpec extends Specification with TestHelper {
 
     "change a nested value without invalidating ConfigMap references" in {
       withTempFolder {
-        val data1 =
+        val data1 = {
           "<robot>\n" +
           "    name=\"Nibbler\"\n" +
           "    age = 23002\n" +
           "    nested {\n" +
-          "        thing = 5\n"
+          "        thing = 5\n" +
           "    }\n" +
           "</robot>\n"
+        }
+
         writeConfigFile("test.conf", data1)
         Configgy.configure(folderName, "test.conf")
 

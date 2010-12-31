@@ -20,20 +20,22 @@
     when building offline.)
   -->
   <target name="download-ivy" unless="skip.download">
+  	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
     <mkdir dir="${ivy.jar.dir}"/>
     <condition property="ivy.url" value="file:${ivy.jar.file}">
       <available file="${ivy.jar.file}" />
     </condition>
     <property name="ivy.url" value="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" />
     <get src="${ivy.url}" dest="${ivy.jar.file}.download" usetimestamp="true" />
-    <move file="${ivy.jar.file}.download" tofile="${ivy.jar.file}" />
+	<move file="${ivy.jar.file}.download" tofile="${ivy.jar.file}" failonerror="false"/>
 
     <condition property="jsch.url" value="file:${jsch.jar.file}">
       <available file="${jsch.jar.file}" />
     </condition>
     <property name="jsch.url" value="http://repo1.maven.org/maven2/jsch/jsch/${jsch.install.version}/jsch-${jsch.install.version}.jar" />
     <get src="${jsch.url}" dest="${jsch.jar.file}.download" usetimestamp="true" />
-    <move file="${jsch.jar.file}.download" tofile="${jsch.jar.file}" />
+    <move file="${jsch.jar.file}.download" tofile="${jsch.jar.file}" failonerror="false" />
   </target>
 
   <!-- import ivy's ant tasks -->

@@ -31,7 +31,7 @@ case object Daily extends Policy
 case class Weekly(dayOfWeek: Int) extends Policy
 
 
-// replace java's ridiculous log levels with the standard ones.
+// replace java's ridiculous log levels with the standard ones. 
 sealed abstract class Level(val name: String, val value: Int) extends javalog.Level(name, value) {
   Logger.levelNamesMap(name) = this
   Logger.levelsMap(value) = this

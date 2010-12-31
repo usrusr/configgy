@@ -13,7 +13,10 @@
   <macrodef name="run-test-class">
     <attribute name="classname" />
     <sequential>
-      <java classname="scala.tools.nsc.MainGenericRunner" fork="true" failonerror="true">
+<!--    	<echo message="dist.dir: ${dist.dir}"/> -->
+<!--    	<echo message="at classname: @{classname}"/> -->
+<!--    	<echo message="target dir: ${target.dir}"/> -->
+      <java classname="scala.tools.nsc.MainGenericRunner" fork="true" failonerror="false">
         <classpath>
           <path refid="test.path" />
           <pathelement location="${target.dir}/classes" />

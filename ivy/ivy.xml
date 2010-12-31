@@ -21,8 +21,8 @@
 
   <dependencies>
     <!-- i guess scala-compiler.jar is needed for MainGenericRunner -->
-    <dependency org="org.scala-lang" name="scala-compiler" rev="2.8.0.RC1"/>
-    <dependency org="org.scala-lang" name="scala-library" rev="2.8.0.RC1" />
+    <dependency org="org.scala-lang" name="scala-compiler" rev="2.8.0"/>
+    <dependency org="org.scala-lang" name="scala-library" rev="2.8.0" />
     <dependency org="org.scala-tools.testing" name="specs_2.8.0.RC1" rev="1.6.5-SNAPSHOT" conf="test->*" />
     <dependency org="junit" name="junit" rev="4.5" conf="test->*" />
     <dependency org="org.scala-tools" name="vscaladoc" rev="1.1-md-3" conf="bootstrap->*" />

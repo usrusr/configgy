@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.lag</groupId>
   <artifactId>configgy</artifactId>
-  <version>1.5.2-usr-281merged</version>
+  <version>1.5.2-usr-281merged-1</version>
   <dependencies>
         <dependency>
             <groupId>org.scala-tools.testing</groupId>

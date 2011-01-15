@@ -61,7 +61,7 @@ final class ConfiggyString(wrapped: String) {
     out.toString
   }
 
-  private val QUOTE_RE = "[\u0000-\u001f\u007f-\uffff\\\\\"]".r
+  private val QUOTE_RE = "[\\u0000-\\u001f\\u007f-\\uffff\\\\\"]".r
 
   /**
    * Quote a string so that unprintable chars (in ASCII) are represented by
